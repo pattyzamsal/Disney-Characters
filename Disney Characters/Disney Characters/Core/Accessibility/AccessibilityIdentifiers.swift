@@ -1,7 +1,16 @@
-//
-//  AccessibilityIdentifiers.swift
-//  Disney Characters
-//
-//  Created by Patricia Zambrano on 24/05/26.
-//
+enum AccessibilityID {
+    enum Splash {
+        static let logo = "splash_logo"
+        static let startButton = "splash_start_button"
+    }
 
+    enum CharacterList {
+        static let searchBar = "character_list_search_bar"
+        static let characterRow = "character_list_row_"
+    }
+
+    enum CharacterDetail {
+        static let characterImage = "character_detail_image"
+        static let characterName = "character_detail_name"
+    }
+}
