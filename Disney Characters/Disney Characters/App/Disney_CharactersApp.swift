@@ -11,7 +11,7 @@ import SwiftUI
 struct Disney_CharactersApp: App {
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            SplashView()
         }
     }
 }
