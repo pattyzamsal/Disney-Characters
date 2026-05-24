@@ -126,7 +126,7 @@ DisneyCharacters/
 │   │   ├── ErrorView.swift                # reusable error + retry
 │   │   └── LoadingView.swift              # reusable loading indicator
 │   └── Navigation/
-│       └── AppRouter.swift                # NavigationStack coordinator
+│       └── AppRouter.swift                # AppRoute enum + @Observable AppRouter with NavigationPath
 │
 ├── Resources/
 │   ├── Assets.xcassets/
@@ -151,13 +151,20 @@ DisneyCharacters/
     │   │       └── SearchCharactersUseCaseTests.swift
     │   └── Presentation/
     │       ├── Mappers/
-    │       │   └── CharacterPresentationMapperTests.swift
+    │       │   ├── CharacterPresentationMapperTests.swift
+    │       │   └── CharacterDetailPresentationMapperTests.swift
     │       └── ViewModels/
     │           ├── CharacterListViewModelTests.swift
     │           └── CharacterDetailViewModelTests.swift
     ├── Mocks/
     │   ├── Generated/                     # Sourcery auto-generated mocks
     │   └── AutoMockable.swift             # Sourcery protocol annotation
+    ├── Stubs/                             # one file per type: TypeName+Stub.swift
+    │   ├── CharacterDTO+Stub.swift
+    │   ├── CharacterListResponseDTO+Stub.swift
+    │   ├── DisneyCharacter+Stub.swift
+    │   ├── PaginationInfo+Stub.swift
+    │   └── PaginationInfoDTO+Stub.swift
     └── Fixtures/
         └── character_list_response.json   # stub JSON for tests
 
@@ -201,6 +208,40 @@ UITests/                                   # DisneyCharactersUITests target
 - Support Dynamic Type — never use fixed font sizes, use `.font(.title)`, `.font(.body)`, etc.
 - Use `Localizable.xcstrings` (String Catalogs) for every user-facing string
 
+### View File Structure
+Every View follows this structure — `body` only composes named subview properties; all constants and visual chunks live in a `private extension`:
+
+```swift
+struct MyView: View {
+    var body: some View {
+        topSection
+        bottomSection
+    }
+}
+
+private extension MyView {
+    // Only include the enums that are actually needed:
+    enum AccessibilityContent {
+        static let someLabel = "screen.element.label"
+        static let someHint  = "screen.element.hint"
+    }
+    enum Content {
+        static let title = "screen.title"
+    }
+    enum Constant {
+        static let spacing: CGFloat = 16
+    }
+    enum ImageName {
+        static let icon = "sf.symbol.name"
+    }
+
+    var topSection: some View { ... }
+    var bottomSection: some View { ... }
+}
+```
+
+This keeps `body` readable at a glance, eliminates magic strings and numbers, and groups each visual responsibility in its own named property.
+
 ### MVVM Rules
 - Views observe ViewModels. Views NEVER call UseCases or Repositories directly
 - ViewModels call UseCases only. ViewModels NEVER import Data layer types
@@ -214,10 +255,13 @@ UITests/                                   # DisneyCharactersUITests target
       case loaded(T)
       case error(String)
   }
+
+  extension ViewState: Equatable where T: Equatable {}
   ```
 
 ### Clean Architecture Rules
 - **Domain layer has ZERO imports** from Data or Presentation
+- **Domain entities do not import Foundation** unless they explicitly use a Foundation type (URL, Date, etc.) — pure Swift stdlib types (Int, String, [String]) need no import. Unnecessary Foundation imports can cause spurious `@MainActor` isolation warnings in Swift 6
 - **Data layer** implements Domain protocols; depends on Domain only
 - **Presentation layer** depends on Domain only (through UseCases)
 - All cross-layer data flow goes through Mappers — never pass DTOs to Views
@@ -229,7 +273,7 @@ UITests/                                   # DisneyCharactersUITests target
 - Always async throws:
   ```swift
   protocol GetCharactersUseCaseProtocol {
-      func execute(page: Int) async throws -> (characters: [Character], info: PaginationInfo)
+      func execute(page: Int) async throws -> (characters: [DisneyCharacter], info: PaginationInfo)
   }
   ```
 
@@ -244,9 +288,10 @@ UITests/                                   # DisneyCharactersUITests target
   - `searchCharacters(name:)` — filters local cache first; falls back to remote only if cache has no match; merges remote results into cache
 
 ### Mappers
-- **DTO → Domain:** `CharacterDTOMapper.toDomain(_ dto: CharacterDTO) -> Character`
-- **Domain → Presentation:** `CharacterPresentationMapper.toPresentation(_ character: Character) -> CharacterPresentationModel`
-- Mappers are static functions or static structs — no state
+- **DTO → Domain:** `CharacterDTOMapper.toDomain(_ dto: CharacterDTO) -> DisneyCharacter`
+- **Domain → Presentation:** `CharacterPresentationMapper.toPresentation(_ character: DisneyCharacter) -> CharacterPresentationModel`
+- Mappers are **caseless enums** — prevents instantiation, signals a pure stateless namespace. Never use `class` or `struct` for mappers
+- `CharacterPresentationMapper` and `CharacterDetailPresentationMapper` convert `imageURL: String?` → `imageURL: URL?` via `URL.init(string:)` (returns nil for invalid strings)
 - Handle optional/missing API fields gracefully in DTO mapper with defaults
 
 ### Dependency Injection
@@ -308,9 +353,10 @@ DerivedData/
 ### .swiftlint.yml (project root)
 ```yaml
 included:
-  - DisneyCharacters
+  - Disney Characters/DisneyCharacters
+  - Disney Characters/DisneyCharactersTests
 excluded:
-  - DisneyCharacters/Tests/Mocks/Generated
+  - Disney Characters/DisneyCharactersTests/Mocks/Generated
   - .build
 
 disabled_rules:
@@ -374,6 +420,21 @@ reporter: "xcode"
 - Run Sourcery: `sourcery --sources "Disney Characters/DisneyCharacters" --templates Templates/AutoMockable.stencil --output "Disney Characters/DisneyCharactersTests/Mocks/Generated"`
 - Generated mocks go in `Tests/Mocks/Generated/` — never edit manually
 - Always regenerate after protocol changes
+- **Nil return value gotcha:** Sourcery generates `var xReturnValue: T?!` for optional-returning methods. Setting this to bare `nil` crashes — the outer IUO becomes nil and force-unwraps. Use a typed nil instead:
+  ```swift
+  // Wrong — crashes at runtime
+  mock.getCachedCharactersReturnValue = nil
+
+  // Correct — IUO holds .some(nil), force-unwrap returns nil safely
+  mock.getCachedCharactersReturnValue = [DisneyCharacter]?.none
+  ```
+
+### Test Stubs
+- Live in `DisneyCharactersTests/Stubs/` — one file per type
+- Naming convention: `TypeName+Stub.swift` (e.g. `DisneyCharacter+Stub.swift`)
+- Each file adds a `static func stub(...)` extension with sensible defaults for every parameter
+- Domain stubs: `DisneyCharacter+Stub.swift`, `PaginationInfo+Stub.swift`
+- Data stubs: `CharacterDTO+Stub.swift`, `PaginationInfoDTO+Stub.swift`, `CharacterListResponseDTO+Stub.swift`
 
 ### Snapshot Tests
 - Live in the **UITests target** (`DisneyCharactersUITests/SnapshotTests/`), not the unit test target — snapshot tests render real views and are UI-bound
@@ -424,6 +485,7 @@ enum AccessibilityID {
 - Every user-facing string must use `String(localized:)` or `LocalizedStringKey`
 - Never put raw strings in Views — always reference catalog keys
 - Organize keys by screen: `splash.title`, `characterList.searchPlaceholder`, `error.networkFailure`
+- Shared view keys already in use: `error.retry.button`, `error.retry.hint`, `loading.accessibilityLabel`
 
 ## SPM Dependencies
 
