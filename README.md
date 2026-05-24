@@ -1,4 +1,4 @@
-# Disnet-Characters
+# Disney-Characters
 This is a repository with an app that shows a list of Disney characters.
 
 Public API from https://github.com/ManuCastrillonM/disney-api. You can visit its [web] (https://disneyapi.dev/docs/)
