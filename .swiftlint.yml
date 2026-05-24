@@ -1,8 +1,9 @@
 included:
-  - DisneyCharacters
+  - Disney Characters/DisneyCharacters
+  - Disney Characters/DisneyCharactersTests
 
 excluded:
-  - DisneyCharacters/Tests/Mocks/Generated
+  - Disney Characters/DisneyCharactersTests/Mocks/Generated
   - .build
 
 disabled_rules:

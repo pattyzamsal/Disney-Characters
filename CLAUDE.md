@@ -371,7 +371,7 @@ reporter: "xcode"
 
 ### Sourcery Mocks
 - Annotate protocols: `// sourcery: AutoMockable`
-- Run Sourcery: `sourcery --sources DisneyCharacters --templates Templates/AutoMockable.stencil --output DisneyCharacters/Tests/Mocks/Generated`
+- Run Sourcery: `sourcery --sources "Disney Characters/DisneyCharacters" --templates Templates/AutoMockable.stencil --output "Disney Characters/DisneyCharactersTests/Mocks/Generated"`
 - Generated mocks go in `Tests/Mocks/Generated/` — never edit manually
 - Always regenerate after protocol changes
 
@@ -466,7 +466,7 @@ Add in Xcode > Project > Package Dependencies:
 - **Build:** `Cmd+B` in Xcode or `xcodebuild -scheme DisneyCharacters`
 - **Run tests:** `Cmd+U` or `xcodebuild test -scheme DisneyCharacters -destination 'platform=iOS Simulator,name=iPhone 16'`
 - **Lint:** `swiftlint --config .swiftlint.yml`
-- **Generate mocks:** `sourcery --sources DisneyCharacters --templates Templates/AutoMockable.stencil --output DisneyCharacters/Tests/Mocks/Generated`
+- **Generate mocks:** `sourcery --sources "Disney Characters/DisneyCharacters" --templates Templates/AutoMockable.stencil --output "Disney Characters/DisneyCharactersTests/Mocks/Generated"`
 - **Record snapshots:** Set `isRecording = true` in snapshot test, run once, set back to `false`
 
 ## Git Conventions

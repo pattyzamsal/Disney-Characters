@@ -1,13 +1,13 @@
 //
-//  Disney_CharactersUITestsLaunchTests.swift
-//  Disney CharactersUITests
+//  DisneyCharactersUITestsLaunchTests.swift
+//  DisneyCharactersUITests
 //
 //  Created by Patricia Zambrano on 24/05/26.
 //
 
 import XCTest
 
-final class Disney_CharactersUITestsLaunchTests: XCTestCase {
+final class DisneyCharactersUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
         true
