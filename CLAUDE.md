@@ -76,7 +76,8 @@ DisneyCharacters/
 ├── Data/
 │   ├── DTOs/
 │   │   ├── CharacterDTO.swift             # Decodable, matches API JSON: _id, name, imageUrl, films, shortFilms, tvShows, videoGames, parkAttractions, allies, enemies, url (url dropped in mapper)
-│   │   ├── CharacterListResponseDTO.swift
+│   │   ├── CharacterListResponseDTO.swift # { info: PaginationInfoDTO, data: [CharacterDTO] }
+│   │   ├── CharacterDetailResponseDTO.swift # { info: PaginationInfoDTO, data: CharacterDTO } — detail endpoint returns single object, not array
 │   │   └── PaginationInfoDTO.swift
 │   ├── DataSources/
 │   │   ├── Remote/
