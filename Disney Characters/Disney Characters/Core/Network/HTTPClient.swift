@@ -1,7 +1,5 @@
-//
-//  HTTPClient.swift
-//  Disney Characters
-//
-//  Created by Patricia Zambrano on 24/05/26.
-//
+import Foundation
 
+protocol HTTPClient {
+    func perform<T: Decodable>(_ endpoint: Endpoint) async throws -> T
+}
