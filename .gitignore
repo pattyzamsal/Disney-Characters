@@ -108,3 +108,9 @@ xcuserdata
 
 # Xcode configuration files (may contain sensitive API keys or environment secrets)
 *.xcconfig
+
+# Sourcery generated mocks (regenerate via: sourcery --sources DisneyCharacters --templates Templates/AutoMockable.stencil --output DisneyCharacters/Tests/Mocks/Generated)
+*.generated.swift
+
+# Snapshot test reference images (committed separately per team preference)
+**/__Snapshots__/
