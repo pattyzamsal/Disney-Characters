@@ -76,13 +76,14 @@ DisneyCharacters/
 ├── Data/
 │   ├── DTOs/
 │   │   ├── CharacterDTO.swift             # Decodable, matches API JSON: _id, name, imageUrl, films, shortFilms, tvShows, videoGames, parkAttractions, allies, enemies, url (url dropped in mapper)
-│   │   ├── CharacterListResponseDTO.swift
+│   │   ├── CharacterListResponseDTO.swift # { info: PaginationInfoDTO, data: [CharacterDTO] }
+│   │   ├── CharacterDetailResponseDTO.swift # { info: PaginationInfoDTO, data: CharacterDTO } — detail endpoint returns single object, not array
 │   │   └── PaginationInfoDTO.swift
 │   ├── DataSources/
 │   │   ├── Remote/
 │   │   │   └── CharacterRemoteDataSource.swift
 │   │   └── Local/
-│   │       └── CharacterLocalDataSource.swift  # in-memory cache
+│   │       └── CharacterLocalDataSource.swift  # CharacterLocalDataSourceProtocol + impl; caches characters, pages, and PaginationInfo per page
 │   ├── Repositories/
 │   │   └── DefaultCharacterRepository.swift    # implements domain protocol
 │   └── Mappers/
@@ -90,7 +91,7 @@ DisneyCharacters/
 │
 ├── Domain/
 │   ├── Entities/
-│   │   ├── Character.swift                # domain model (struct): id, name, imageURL, films, shortFilms, tvShows, videoGames, parkAttractions, allies, enemies
+│   │   ├── DisneyCharacter.swift          # domain model (struct): id, name, imageURL, films, shortFilms, tvShows, videoGames, parkAttractions, allies, enemies
 │   │   └── PaginationInfo.swift
 │   ├── Repositories/
 │   │   └── CharacterRepositoryProtocol.swift   # contract
@@ -236,6 +237,11 @@ UITests/                                   # DisneyCharactersUITests target
 - Domain defines the protocol (contract)
 - Data provides the implementation
 - Repository decides data source (remote vs local cache)
+- Both data sources are injected via protocol — fully mockable and consistent
+- **Cache-first strategy (offline support):**
+  - `getCharacters(page:)` — returns cached characters + PaginationInfo if available; fetches remote otherwise and caches both
+  - `getCharacterDetail(id:)` — returns cached character if available; fetches remote otherwise
+  - `searchCharacters(name:)` — filters local cache first; falls back to remote only if cache has no match; merges remote results into cache
 
 ### Mappers
 - **DTO → Domain:** `CharacterDTOMapper.toDomain(_ dto: CharacterDTO) -> Character`

@@ -1,7 +1,11 @@
-//
-//  NetworkError.swift
-//  Disney Characters
-//
-//  Created by Patricia Zambrano on 24/05/26.
-//
+import Foundation
 
+enum NetworkError: Error, Equatable {
+    case invalidURL
+    case noData
+    case decodingError
+    case serverError(statusCode: Int)
+    case noConnection
+    case timeout
+    case unknown
+}

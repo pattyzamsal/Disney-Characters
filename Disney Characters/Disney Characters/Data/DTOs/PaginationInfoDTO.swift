@@ -1,6 +1,6 @@
 import Foundation
 
-struct PaginationInfo: Equatable {
+struct PaginationInfoDTO: Decodable {
     let totalPages: Int
     let count: Int
     let previousPage: String?
