@@ -1,8 +1,115 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Hello, world!" : {
-
+    "error.retry.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Try Again"
+          }
+        }
+      }
+    },
+    "error.retry.hint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Retries the failed request"
+          }
+        }
+      }
+    },
+    "loading.accessibilityLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Loading"
+          }
+        }
+      }
+    },
+    "splash.credits.author" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Patricia Zambrano @pattyzamsal"
+          }
+        }
+      }
+    },
+    "splash.credits.label" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Created for learning by:"
+          }
+        }
+      }
+    },
+    "splash.logo.accessibilityLabel" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disney Characters logo"
+          }
+        }
+      }
+    },
+    "splash.subtitle" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Paginated list using data from the public Disney API https://disneyapi.dev/ for Disney fans"
+          }
+        }
+      }
+    },
+    "splash.start.accessibilityHint" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Navigates to the character list"
+          }
+        }
+      }
+    },
+    "splash.start.button" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Start Exploring"
+          }
+        }
+      }
+    },
+    "splash.title" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Disney Characters"
+          }
+        }
+      }
     }
   },
   "version" : "1.1"
