@@ -83,7 +83,7 @@ DisneyCharacters/
 │   │   ├── Remote/
 │   │   │   └── CharacterRemoteDataSource.swift
 │   │   └── Local/
-│   │       └── CharacterLocalDataSource.swift  # in-memory cache
+│   │       └── CharacterLocalDataSource.swift  # CharacterLocalDataSourceProtocol + impl; caches characters, pages, and PaginationInfo per page
 │   ├── Repositories/
 │   │   └── DefaultCharacterRepository.swift    # implements domain protocol
 │   └── Mappers/
@@ -237,6 +237,11 @@ UITests/                                   # DisneyCharactersUITests target
 - Domain defines the protocol (contract)
 - Data provides the implementation
 - Repository decides data source (remote vs local cache)
+- Both data sources are injected via protocol — fully mockable and consistent
+- **Cache-first strategy (offline support):**
+  - `getCharacters(page:)` — returns cached characters + PaginationInfo if available; fetches remote otherwise and caches both
+  - `getCharacterDetail(id:)` — returns cached character if available; fetches remote otherwise
+  - `searchCharacters(name:)` — filters local cache first; falls back to remote only if cache has no match; merges remote results into cache
 
 ### Mappers
 - **DTO → Domain:** `CharacterDTOMapper.toDomain(_ dto: CharacterDTO) -> Character`
