@@ -91,7 +91,7 @@ DisneyCharacters/
 │
 ├── Domain/
 │   ├── Entities/
-│   │   ├── Character.swift                # domain model (struct): id, name, imageURL, films, shortFilms, tvShows, videoGames, parkAttractions, allies, enemies
+│   │   ├── DisneyCharacter.swift          # domain model (struct): id, name, imageURL, films, shortFilms, tvShows, videoGames, parkAttractions, allies, enemies
 │   │   └── PaginationInfo.swift
 │   ├── Repositories/
 │   │   └── CharacterRepositoryProtocol.swift   # contract

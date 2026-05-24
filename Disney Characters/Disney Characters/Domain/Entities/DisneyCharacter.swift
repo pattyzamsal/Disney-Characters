@@ -1,4 +1,6 @@
-struct Character: Equatable {
+import Foundation
+
+struct DisneyCharacter: Equatable {
     let id: Int
     let name: String
     let imageURL: String?

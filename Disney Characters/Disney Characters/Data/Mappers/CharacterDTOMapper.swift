@@ -21,8 +21,8 @@
 /// unit test — pure input/output, no mocks, no async — so regressions are caught
 /// immediately when a mapping rule changes.
 enum CharacterDTOMapper {
-    static func toDomain(_ dto: CharacterDTO) -> Character {
-        Character(
+    static func toDomain(_ dto: CharacterDTO) -> DisneyCharacter {
+        DisneyCharacter(
             id: dto.id,
             name: dto.name,
             imageURL: dto.imageUrl,

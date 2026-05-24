@@ -12,7 +12,7 @@ final class DefaultCharacterRepository {
 }
 
 extension DefaultCharacterRepository: CharacterRepositoryProtocol {
-    func getCharacters(page: Int) async throws -> (characters: [Character], info: PaginationInfo) {
+    func getCharacters(page: Int) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
         if let cachedCharacters = localDataSource.getCachedCharacters(page: page),
            let cachedInfo = localDataSource.getCachedPaginationInfo(page: page) {
             return (cachedCharacters, cachedInfo)
@@ -29,7 +29,7 @@ extension DefaultCharacterRepository: CharacterRepositoryProtocol {
         }
     }
 
-    func getCharacterDetail(id: Int) async throws -> Character {
+    func getCharacterDetail(id: Int) async throws -> DisneyCharacter {
         if let cached = localDataSource.getCachedCharacter(id: id) {
             return cached
         }
@@ -41,7 +41,7 @@ extension DefaultCharacterRepository: CharacterRepositoryProtocol {
         }
     }
 
-    func searchCharacters(name: String) async throws -> [Character] {
+    func searchCharacters(name: String) async throws -> [DisneyCharacter] {
         let localResults = localDataSource.searchCachedCharacters(name: name)
         if !localResults.isEmpty {
             return localResults

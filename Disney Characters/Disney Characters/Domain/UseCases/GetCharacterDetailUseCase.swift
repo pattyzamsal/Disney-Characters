@@ -1,6 +1,6 @@
 // sourcery: AutoMockable
 protocol GetCharacterDetailUseCaseProtocol {
-    func execute(id: Int) async throws -> Character
+    func execute(id: Int) async throws -> DisneyCharacter
 }
 
 final class GetCharacterDetailUseCase: GetCharacterDetailUseCaseProtocol {
@@ -10,7 +10,7 @@ final class GetCharacterDetailUseCase: GetCharacterDetailUseCaseProtocol {
         self.repository = repository
     }
 
-    func execute(id: Int) async throws -> Character {
+    func execute(id: Int) async throws -> DisneyCharacter {
         try await repository.getCharacterDetail(id: id)
     }
 }

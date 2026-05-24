@@ -1,3 +1,5 @@
+import Foundation
+
 struct PaginationInfo: Equatable {
     let totalPages: Int
     let count: Int
