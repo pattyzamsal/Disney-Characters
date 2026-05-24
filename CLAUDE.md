@@ -75,7 +75,7 @@ DisneyCharacters/
 │
 ├── Data/
 │   ├── DTOs/
-│   │   ├── CharacterDTO.swift             # Decodable, matches API JSON
+│   │   ├── CharacterDTO.swift             # Decodable, matches API JSON: _id, name, imageUrl, films, shortFilms, tvShows, videoGames, parkAttractions, allies, enemies, url (url dropped in mapper)
 │   │   ├── CharacterListResponseDTO.swift
 │   │   └── PaginationInfoDTO.swift
 │   ├── DataSources/
@@ -86,11 +86,11 @@ DisneyCharacters/
 │   ├── Repositories/
 │   │   └── DefaultCharacterRepository.swift    # implements domain protocol
 │   └── Mappers/
-│       └── CharacterDTOMapper.swift            # DTO → Domain
+│       └── CharacterDTOMapper.swift            # DTO → Domain (maps all fields; drops url — not a domain concept)
 │
 ├── Domain/
 │   ├── Entities/
-│   │   ├── Character.swift                # domain model (struct)
+│   │   ├── Character.swift                # domain model (struct): id, name, imageURL, films, shortFilms, tvShows, videoGames, parkAttractions, allies, enemies
 │   │   └── PaginationInfo.swift
 │   ├── Repositories/
 │   │   └── CharacterRepositoryProtocol.swift   # contract
@@ -251,7 +251,9 @@ UITests/                                   # DisneyCharactersUITests target
 
 ### Error Handling
 - Network layer throws `NetworkError` (enum: `.invalidURL`, `.noData`, `.decodingError`, `.serverError(statusCode:)`, `.noConnection`, `.timeout`, `.unknown`)
-- Domain maps to `DomainError` (enum: `.characterNotFound`, `.networkFailure(String)`, `.unexpected`)
+- Domain maps to `DomainError` (enum: `.characterNotFound`, `.noInternetConnection`, `.networkFailure(String)`, `.unexpected`)
+  - `.noInternetConnection` — device has no connectivity; maps from `NetworkError.noConnection`; show "Check your connection" UI
+  - `.networkFailure(String)` — device reached the server but something failed (timeout, bad status, decoding); show "Something went wrong, try again" UI
 - ViewModels catch errors and map to user-friendly localized strings
 - Never show raw error messages to users — always use localized strings
 
@@ -449,7 +451,7 @@ Add in Xcode > Project > Package Dependencies:
 ### 3. Character Detail View (`CharacterDetailView`)
 - Large character image (Kingfisher)
 - Character name as title
-- Sections for: Films, TV Shows, Video Games, Park Attractions
+- Sections for: Films, Short Films, TV Shows, Video Games, Park Attractions, Allies, Enemies
 - Each section only shown if data exists (non-empty array)
 - Back navigation
 - Accessibility: all sections labeled, image described
