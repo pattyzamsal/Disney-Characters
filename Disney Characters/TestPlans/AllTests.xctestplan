@@ -1,0 +1,20 @@
+{
+  "configurations": [
+    {
+      "id": "C423477C-A2BC-4960-94FA-E7D6916FB2E6",
+      "name": "All Tests",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {},
+  "testTargets": [
+    {
+      "target": {
+        "containerPath": "container:DisneyCharacters.xcodeproj",
+        "identifier": "27A5F2002FC362AA00ED41B7",
+        "name": "DisneyCharactersTests"
+      }
+    }
+  ],
+  "version": 1
+}
