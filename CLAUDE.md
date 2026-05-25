@@ -165,16 +165,19 @@ DisneyCharacters/
     │   ├── DisneyCharacter+Stub.swift
     │   ├── PaginationInfo+Stub.swift
     │   └── PaginationInfoDTO+Stub.swift
+    ├── SnapshotTests/                     # snapshot tests (NOT in UITests — see Snapshot Tests section)
+    │   ├── SplashViewSnapshotTests.swift
+    │   ├── CharacterListViewSnapshotTests.swift
+    │   ├── CharacterRowViewSnapshotTests.swift
+    │   └── CharacterDetailViewSnapshotTests.swift
     └── Fixtures/
         └── character_list_response.json   # stub JSON for tests
 
-UITests/                                   # DisneyCharactersUITests target
-└── SnapshotTests/
-    ├── SplashViewSnapshotTests.swift
-    ├── CharacterListViewSnapshotTests.swift
-    ├── CharacterRowViewSnapshotTests.swift
-    └── CharacterDetailViewSnapshotTests.swift
+UITests/                                   # DisneyCharactersUITests target (UI automation only)
 ```
+
+Note: Snapshot tests live in `DisneyCharactersTests/SnapshotTests/` (unit test target), not UITests.
+See the Snapshot Tests section under Testing for the reason.
 
 ## Coding Conventions
 
@@ -222,11 +225,11 @@ struct MyView: View {
 private extension MyView {
     // Only include the enums that are actually needed:
     enum AccessibilityContent {
-        static let someLabel = "screen.element.label"
-        static let someHint  = "screen.element.hint"
+        static let someLabel: LocalizedStringKey = "screen.element.label"
+        static let someHint: LocalizedStringKey  = "screen.element.hint"
     }
     enum Content {
-        static let title = "screen.title"
+        static let title: LocalizedStringKey = "screen.title"
     }
     enum Constant {
         static let spacing: CGFloat = 16
@@ -241,6 +244,16 @@ private extension MyView {
 ```
 
 This keeps `body` readable at a glance, eliminates magic strings and numbers, and groups each visual responsibility in its own named property.
+
+Previews are always wrapped in `#if DEBUG` so they are stripped from Release and Staging builds:
+
+```swift
+#if DEBUG
+#Preview {
+    MyView(viewModel: MyViewModel(...))
+}
+#endif
+```
 
 ### MVVM Rules
 - Views observe ViewModels. Views NEVER call UseCases or Repositories directly
@@ -437,14 +450,15 @@ reporter: "xcode"
 - Data stubs: `CharacterDTO+Stub.swift`, `PaginationInfoDTO+Stub.swift`, `CharacterListResponseDTO+Stub.swift`
 
 ### Snapshot Tests
-- Live in the **UITests target** (`DisneyCharactersUITests/SnapshotTests/`), not the unit test target — snapshot tests render real views and are UI-bound
+- Live in the **unit test target** (`DisneyCharactersTests/SnapshotTests/`), NOT in the UITests target
+- Reason: Xcode 16 forces `-module-alias Testing=_Testing_Unavailable` for all `com.apple.product-type.bundle.ui-testing` bundles regardless of build settings; swift-snapshot-testing 1.17+ links against Testing.framework, making the two permanently incompatible
 - Use `swift-snapshot-testing` by Point-Free (SPM)
 - Test all Views and reusable components
 - Test in light and dark mode
 - Test with Dynamic Type sizes (`.accessibilityExtraExtraExtraLarge`)
 - Test in multiple device widths (iPhone SE, iPhone 16, iPad)
 - Record snapshots first (`isRecording = true`), then assert
-- Store reference images in `UITests/SnapshotTests/__Snapshots__/`
+- Store reference images in `DisneyCharactersTests/SnapshotTests/__Snapshots__/`
 
 ## Accessibility
 
@@ -484,6 +498,7 @@ enum AccessibilityID {
 - Default language: English
 - Every user-facing string must use `String(localized:)` or `LocalizedStringKey`
 - Never put raw strings in Views — always reference catalog keys
+- String key constants in `Content` and `AccessibilityContent` enums **must be typed as `LocalizedStringKey`**, not `String` — SwiftUI only performs catalog lookup when `Text()` receives a `LocalizedStringKey`, not a plain `String` variable
 - Organize keys by screen: `splash.title`, `characterList.searchPlaceholder`, `error.networkFailure`
 - Shared view keys already in use: `error.retry.button`, `error.retry.hint`, `loading.accessibilityLabel`
 
