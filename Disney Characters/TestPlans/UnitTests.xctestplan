@@ -1,0 +1,25 @@
+{
+  "configurations": [
+    {
+      "id": "96A7315B-CF46-49BC-898C-63D2F48B6B20",
+      "name": "Unit Tests",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {},
+  "testTargets": [
+    {
+      "skippedTests": [
+        "CharacterListViewSnapshotTests",
+        "CharacterRowViewSnapshotTests",
+        "SplashViewSnapshotTests"
+      ],
+      "target": {
+        "containerPath": "container:DisneyCharacters.xcodeproj",
+        "identifier": "27A5F2002FC362AA00ED41B7",
+        "name": "DisneyCharactersTests"
+      }
+    }
+  ],
+  "version": 1
+}

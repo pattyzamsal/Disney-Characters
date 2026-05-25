@@ -1,0 +1,30 @@
+{
+  "configurations": [
+    {
+      "id": "B00A6FCE-E97C-4808-9B61-770116676AEB",
+      "name": "Snapshot Tests",
+      "options": {}
+    }
+  ],
+  "defaultOptions": {},
+  "testTargets": [
+    {
+      "skippedTests": [
+        "CharacterDTOMapperTests",
+        "CharacterDetailPresentationMapperTests",
+        "CharacterListViewModelTests",
+        "CharacterPresentationMapperTests",
+        "DefaultCharacterRepositoryTests",
+        "GetCharacterDetailUseCaseTests",
+        "GetCharactersUseCaseTests",
+        "SearchCharactersUseCaseTests"
+      ],
+      "target": {
+        "containerPath": "container:DisneyCharacters.xcodeproj",
+        "identifier": "27A5F2002FC362AA00ED41B7",
+        "name": "DisneyCharactersTests"
+      }
+    }
+  ],
+  "version": 1
+}

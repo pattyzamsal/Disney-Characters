@@ -476,6 +476,24 @@ reporter: "xcode"
 - Data stubs: `CharacterDTO+Stub.swift`, `PaginationInfoDTO+Stub.swift`, `CharacterListResponseDTO+Stub.swift`
 - Presentation stubs: `CharacterPresentationModel+Stub.swift`
 
+### Test Plans
+Test plans live in `TestPlans/` (project root) and are wired to the `DisneyCharactersTests` scheme. `UnitTests` is the default plan when pressing `Cmd+U`.
+
+| Plan | Runs |
+|------|------|
+| `UnitTests.xctestplan` | All unit tests; skips snapshot classes |
+| `SnapshotTests.xctestplan` | All snapshot tests; skips unit classes |
+| `AllTests.xctestplan` | Everything |
+
+Switch plans in Xcode via `Product → Test Plan`. From the command line:
+```bash
+xcodebuild test -scheme DisneyCharactersTests -testPlan UnitTests   -destination '...'
+xcodebuild test -scheme DisneyCharactersTests -testPlan SnapshotTests -destination '...'
+xcodebuild test -scheme DisneyCharactersTests -testPlan AllTests      -destination '...'
+```
+
+**Keeping plans in sync:** when adding a new snapshot test class, add its name to `skippedTests` in `UnitTests.xctestplan`. When adding a new unit test class, add it to `SnapshotTests.xctestplan`. `AllTests.xctestplan` never needs updating.
+
 ### Snapshot Tests
 - Live in the **unit test target** (`DisneyCharactersTests/SnapshotTests/`), NOT in the UITests target
 - Reason: Xcode 16 forces `-module-alias Testing=_Testing_Unavailable` for all `com.apple.product-type.bundle.ui-testing` bundles regardless of build settings; swift-snapshot-testing 1.17+ links against Testing.framework, making the two permanently incompatible
@@ -569,7 +587,9 @@ Add in Xcode > Project > Package Dependencies:
 
 ## Commands
 - **Build:** `Cmd+B` in Xcode or `xcodebuild -scheme DisneyCharacters`
-- **Run tests:** `Cmd+U` or `xcodebuild test -scheme DisneyCharacters -destination 'platform=iOS Simulator,name=iPhone 16'`
+- **Run all tests:** `Cmd+U` (uses `UnitTests` plan by default) or `xcodebuild test -scheme DisneyCharactersTests -testPlan AllTests -destination 'platform=iOS Simulator,name=iPhone 16'`
+- **Run unit tests only:** `xcodebuild test -scheme DisneyCharactersTests -testPlan UnitTests -destination 'platform=iOS Simulator,name=iPhone 16'`
+- **Run snapshot tests only:** `xcodebuild test -scheme DisneyCharactersTests -testPlan SnapshotTests -destination 'platform=iOS Simulator,name=iPhone 16'`
 - **Lint:** `swiftlint --config .swiftlint.yml`
 - **Generate mocks:** `sourcery --sources "Disney Characters/DisneyCharacters" --templates Templates/AutoMockable.stencil --output "Disney Characters/DisneyCharactersTests/Mocks/Generated"`
 - **Record snapshots:** Set `isRecording = true` in snapshot test, run once, set back to `false`
