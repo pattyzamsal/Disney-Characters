@@ -1,0 +1,66 @@
+@testable import DisneyCharacters
+{% for type in types.protocols where type.annotations.AutoMockable %}
+{% if type.accessLevel == "public" %}public {% endif %}final class {{ type.name }}Mock: {{ type.name }} {
+{% for variable in type.variables %}
+    {% if variable.isOptional %}
+    var {{ variable.name }}: {{ variable.typeName }} = nil
+    {% else %}
+    var {{ variable.name }}: {{ variable.typeName }}!
+    {% endif %}
+{% endfor %}
+{% for method in type.methods %}
+    // MARK: - {{ method.shortName }}
+
+    var {{ method.shortName }}CallsCount = 0
+    var {{ method.shortName }}Called: Bool {
+        return {{ method.shortName }}CallsCount > 0
+    }
+    {% if method.parameters.count == 1 %}
+    var {{ method.shortName }}ReceivedArguments: {{ method.parameters.first.typeName }}?
+    var {{ method.shortName }}ReceivedInvocations: [{{ method.parameters.first.typeName }}] = []
+    {% endif %}
+    {% if method.parameters.count > 1 %}
+    var {{ method.shortName }}ReceivedArguments: ({% for param in method.parameters %}{{ param.name }}: {{ param.typeName }}{% if not forloop.last %}, {% endif %}{% endfor %})?
+    var {{ method.shortName }}ReceivedInvocations: [({% for param in method.parameters %}{{ param.name }}: {{ param.typeName }}{% if not forloop.last %}, {% endif %}{% endfor %})] = []
+    {% endif %}
+    {% if not method.returnTypeName.isVoid %}
+    var {{ method.shortName }}ReturnValue: {{ method.returnTypeName }}!
+    {% endif %}
+    {% if method.throws %}
+    var {{ method.shortName }}ThrowableError: Error?
+    {% endif %}
+    var {{ method.shortName }}Closure: (({% for param in method.parameters %}{{ param.typeName }}{% if not forloop.last %}, {% endif %}{% endfor %}) {% if method.isAsync %}async {% endif %}{% if method.throws %}throws {% endif %}-> {{ method.returnTypeName }})?
+
+    {% if method.isAsync %}
+    func {{ method.name }} async{% if method.throws %} throws{% endif %}{% if not method.returnTypeName.isVoid %} -> {{ method.returnTypeName }}{% endif %} {
+    {% else %}
+    func {{ method.name }}{% if method.throws %} throws{% endif %}{% if not method.returnTypeName.isVoid %} -> {{ method.returnTypeName }}{% endif %} {
+    {% endif %}
+        {{ method.shortName }}CallsCount += 1
+        {% if method.parameters.count == 1 %}
+        {{ method.shortName }}ReceivedArguments = {{ method.parameters.first.name }}
+        {{ method.shortName }}ReceivedInvocations.append({{ method.parameters.first.name }})
+        {% endif %}
+        {% if method.parameters.count > 1 %}
+        {{ method.shortName }}ReceivedArguments = ({% for param in method.parameters %}{{ param.name }}: {{ param.name }}{% if not forloop.last %}, {% endif %}{% endfor %})
+        {{ method.shortName }}ReceivedInvocations.append(({% for param in method.parameters %}{{ param.name }}: {{ param.name }}{% if not forloop.last %}, {% endif %}{% endfor %}))
+        {% endif %}
+        {% if method.throws %}
+        if let error = {{ method.shortName }}ThrowableError {
+            throw error
+        }
+        {% endif %}
+        if let closure = {{ method.shortName }}Closure {
+            {% if method.throws %}
+            return try {% if method.isAsync %}await {% endif %}closure({% for param in method.parameters %}{{ param.name }}{% if not forloop.last %}, {% endif %}{% endfor %})
+            {% else %}
+            return {% if method.isAsync %}await {% endif %}closure({% for param in method.parameters %}{{ param.name }}{% if not forloop.last %}, {% endif %}{% endfor %})
+            {% endif %}
+        }
+        {% if not method.returnTypeName.isVoid %}
+        return {{ method.shortName }}ReturnValue
+        {% endif %}
+    }
+{% endfor %}
+}
+{% endfor %}

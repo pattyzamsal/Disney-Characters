@@ -1,0 +1,36 @@
+{
+  "info": {
+    "totalPages": 149,
+    "count": 50,
+    "previousPage": null,
+    "nextPage": "https://api.disneyapi.dev/character?page=2&pageSize=50"
+  },
+  "data": [
+    {
+      "_id": 1,
+      "name": "Mickey Mouse",
+      "imageUrl": "https://static.wikia.nocookie.net/disney/images/mickey.png",
+      "films": ["Fantasia", "Fun and Fancy Free"],
+      "shortFilms": ["The Simple Things"],
+      "tvShows": ["Mickey Mouse Clubhouse"],
+      "videoGames": ["Kingdom Hearts"],
+      "parkAttractions": ["Mickey's PhilharMagic"],
+      "allies": ["Minnie Mouse", "Donald Duck"],
+      "enemies": ["Pete"],
+      "url": "https://api.disneyapi.dev/character/1"
+    },
+    {
+      "_id": 2,
+      "name": "Minnie Mouse",
+      "imageUrl": "https://static.wikia.nocookie.net/disney/images/minnie.png",
+      "films": ["Fantasia"],
+      "shortFilms": [],
+      "tvShows": ["Mickey Mouse Clubhouse"],
+      "videoGames": [],
+      "parkAttractions": ["Mickey's PhilharMagic"],
+      "allies": ["Mickey Mouse"],
+      "enemies": [],
+      "url": "https://api.disneyapi.dev/character/2"
+    }
+  ]
+}

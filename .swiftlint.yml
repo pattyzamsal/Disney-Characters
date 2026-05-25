@@ -1,0 +1,52 @@
+included:
+  - Disney Characters/DisneyCharacters
+  - Disney Characters/DisneyCharactersTests
+
+excluded:
+  - Disney Characters/DisneyCharactersTests/Mocks/Generated
+  - .build
+
+disabled_rules:
+  - trailing_whitespace
+
+opt_in_rules:
+  - empty_count
+  - closure_spacing
+  - contains_over_first_not_nil
+  - discouraged_optional_boolean
+  - explicit_init
+  - fatal_error_message
+  - first_where
+  - force_unwrapping
+  - implicitly_unwrapped_optional
+  - modifier_order
+  - overridden_super_call
+  - private_action
+  - private_outlet
+  - unneeded_parentheses_in_closure_argument
+  - vertical_whitespace_closing_braces
+
+line_length:
+  warning: 120
+  error: 150
+
+type_body_length:
+  warning: 300
+  error: 400
+
+file_length:
+  warning: 500
+  error: 700
+
+function_body_length:
+  warning: 40
+  error: 60
+
+identifier_name:
+  min_length: 2
+  max_length: 50
+
+nesting:
+  type_level: 2
+
+reporter: "xcode"
