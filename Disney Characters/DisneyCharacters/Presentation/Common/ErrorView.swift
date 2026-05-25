@@ -17,12 +17,12 @@ struct ErrorView: View {
 
 private extension ErrorView {
     enum AccessibilityContent {
-        static let buttonLabel = "error.retry.button"
-        static let buttonHint = "error.retry.hint"
+        static let buttonLabel: LocalizedStringKey = "error.retry.button"
+        static let buttonHint: LocalizedStringKey = "error.retry.hint"
     }
-    
+
     enum Content {
-        static let errorTextButton = "error.retry.button"
+        static let errorTextButton: LocalizedStringKey = "error.retry.button"
     }
     
     enum Constant {

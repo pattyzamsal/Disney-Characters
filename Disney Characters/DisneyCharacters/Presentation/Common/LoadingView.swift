@@ -9,7 +9,7 @@ struct LoadingView: View {
 
 private extension LoadingView {
     enum AccessibilityContent {
-        static let label = "loading.accessibilityLabel"
+        static let label: LocalizedStringKey = "loading.accessibilityLabel"
     }
 
     var progressView: some View {
