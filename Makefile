@@ -1,8 +1,5 @@
 SHELL := /bin/bash
 
-CONFIG_DIR := Disney\ Characters/DisneyCharacters/Configuration
-API_BASE_URL := https:/$()/api.disneyapi.dev
-
 .PHONY: install config generate open mocks lint help
 
 help: ## Show available commands
@@ -18,11 +15,13 @@ install: ## Install required tools and generate the Xcode project (run this firs
 	@echo "✓ Setup complete. Run 'make open' to open the project in Xcode."
 
 config: ## Create xcconfig files if they do not exist (safe to re-run)
-	@for env in Dev Staging Prod; do \
-		file="$(CONFIG_DIR)/$$env.xcconfig"; \
+	@config_dir="Disney Characters/DisneyCharacters/Configuration"; \
+	mkdir -p "$$config_dir"; \
+	for env in Dev Staging Prod; do \
+		file="$$config_dir/$$env.xcconfig"; \
 		if [ ! -f "$$file" ]; then \
-			echo "→ Creating $$file..."; \
-			printf 'API_BASE_URL = $(API_BASE_URL)\n' > "$$file"; \
+			echo "→ Creating $$env.xcconfig..."; \
+			printf 'API_BASE_URL = https:/$()/api.disneyapi.dev\n' > "$$file"; \
 		fi; \
 	done
 
