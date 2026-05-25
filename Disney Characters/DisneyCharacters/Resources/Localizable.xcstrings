@@ -1,6 +1,83 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "characterDetail.section.allies" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Allies"
+          }
+        }
+      }
+    },
+    "characterDetail.section.enemies" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Enemies"
+          }
+        }
+      }
+    },
+    "characterDetail.section.films" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Films"
+          }
+        }
+      }
+    },
+    "characterDetail.section.parkAttractions" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Park Attractions"
+          }
+        }
+      }
+    },
+    "characterDetail.section.shortFilms" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Short Films"
+          }
+        }
+      }
+    },
+    "characterDetail.section.tvShows" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "TV Shows"
+          }
+        }
+      }
+    },
+    "characterDetail.section.videoGames" : {
+      "extractionState" : "manual",
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Video Games"
+          }
+        }
+      }
+    },
     "characterList.emptyState" : {
       "extractionState" : "manual",
       "localizations" : {
