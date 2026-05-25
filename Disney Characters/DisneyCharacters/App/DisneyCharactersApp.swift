@@ -13,8 +13,8 @@ struct DisneyCharactersApp: App {
                         switch route {
                         case .characterList:
                             CharacterListAssembler.make(container: container, router: router)
-                        case .characterDetail:
-                            EmptyView()
+                        case .characterDetail(let id):
+                            CharacterDetailAssembler.make(id: id, container: container)
                         }
                     }
             }

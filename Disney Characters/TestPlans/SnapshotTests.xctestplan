@@ -12,6 +12,7 @@
       "skippedTests": [
         "CharacterDTOMapperTests",
         "CharacterDetailPresentationMapperTests",
+        "CharacterDetailViewModelTests",
         "CharacterListViewModelTests",
         "CharacterPresentationMapperTests",
         "DefaultCharacterRepositoryTests",
