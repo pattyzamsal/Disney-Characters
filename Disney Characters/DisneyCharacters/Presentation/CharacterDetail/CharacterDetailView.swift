@@ -176,6 +176,7 @@ private extension CharacterDetailView {
     }
 }
 
+@MainActor
 private func previewViewModel(
     state: ViewState<CharacterDetailPresentationModel>
 ) -> CharacterDetailViewModel {

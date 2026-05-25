@@ -140,6 +140,7 @@ private extension CharacterListView {
     }
 }
 
+@MainActor
 private func previewViewModel(
     state: ViewState<[CharacterPresentationModel]>
 ) -> CharacterListViewModel {
