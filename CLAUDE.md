@@ -56,7 +56,7 @@ DisneyCharacters/
 │   ├── DisneyCharactersApp.swift          # @main entry point
 │   ├── AppDelegate.swift                  # if needed
 │   └── DI/
-│       └── DependencyContainer.swift      # DI registration
+│       └── DependencyContainer.swift      # registers shared long-lived dependencies (repositories)
 │
 ├── Core/
 │   ├── Network/
@@ -113,6 +113,7 @@ DisneyCharacters/
 │   │   ├── SplashView.swift
 │   │   └── SplashViewModel.swift
 │   ├── CharacterList/
+│   │   ├── CharacterListAssembler.swift   # builds CharacterListView + ViewModel; receives container + router
 │   │   ├── CharacterListView.swift
 │   │   ├── CharacterListViewModel.swift
 │   │   └── Components/
@@ -266,11 +267,14 @@ Previews are always wrapped in `#if DEBUG` so they are stripped from Release and
       case idle
       case loading
       case loaded(T)
-      case error(String)
+      case error(String, isRetryable: Bool)
   }
 
   extension ViewState: Equatable where T: Equatable {}
   ```
+- `isRetryable: false` — errors where retrying immediately makes no sense (no internet, character not found); `ErrorView` hides the retry button
+- `isRetryable: true` — transient errors the user can recover from (network failure, unexpected); `ErrorView` shows the retry button
+- Always catch `CancellationError` separately in ViewModel async methods and return silently — do not set error state on cancellation
 
 ### Clean Architecture Rules
 - **Domain layer has ZERO imports** from Data or Presentation
@@ -309,16 +313,26 @@ Previews are always wrapped in `#if DEBUG` so they are stripped from Release and
 
 ### Dependency Injection
 - Use a lightweight DI container (manual registration, no third-party DI frameworks)
-- Register protocols to concrete types
+- `DependencyContainer` holds shared, long-lived dependencies (e.g., `characterRepository`) — one instance per app lifetime, created at app launch; lives in `App/DI/`
+- **Assemblers** (caseless enums, one per screen) receive the container + router and build the ViewModel + View for a route — keeps `DisneyCharactersApp` thin
+  ```swift
+  enum CharacterListAssembler {
+      static func make(container: DependencyContainer, router: AppRouter) -> some View { ... }
+  }
+  ```
+- Assemblers live **inside their feature folder** (e.g., `Presentation/CharacterList/CharacterListAssembler.swift`), not in `App/DI/` — see Architecture Decisions
 - Inject via initializer injection — never property injection or service locator in Views
-- Container created at app launch, passed through environment or init chain
+- Add a new assembler whenever a new route is wired in `DisneyCharactersApp`
 
 ### Error Handling
 - Network layer throws `NetworkError` (enum: `.invalidURL`, `.noData`, `.decodingError`, `.serverError(statusCode:)`, `.noConnection`, `.timeout`, `.unknown`)
 - Domain maps to `DomainError` (enum: `.characterNotFound`, `.noInternetConnection`, `.networkFailure(String)`, `.unexpected`)
-  - `.noInternetConnection` — device has no connectivity; maps from `NetworkError.noConnection`; show "Check your connection" UI
-  - `.networkFailure(String)` — device reached the server but something failed (timeout, bad status, decoding); show "Something went wrong, try again" UI
-- ViewModels catch errors and map to user-friendly localized strings
+  - `.noInternetConnection` — device has no connectivity; maps from `NetworkError.noConnection`; `isRetryable: false` — show "Check your connection" without retry button
+  - `.networkFailure(String)` — device reached the server but something failed (timeout, bad status, decoding); `isRetryable: true` — show "Something went wrong, try again" with retry button
+  - `.characterNotFound` — resource does not exist (404); `isRetryable: false` — retrying the same request will not help
+  - `.unexpected` — unknown error; `isRetryable: true` — worth trying again
+- ViewModels catch errors and map to user-friendly localized strings + `isRetryable` flag via `ViewState.error(String, isRetryable: Bool)`
+- Always catch `CancellationError` before the generic `catch` block and return silently
 - Never show raw error messages to users — always use localized strings
 
 ### Modern Concurrency (async/await)
@@ -335,6 +349,18 @@ Previews are always wrapped in `#if DEBUG` so they are stripped from Release and
 - **Remote fallback:** if local cache has no match, call `GET /character?name=<query>`
 - Merge remote results into local cache to avoid duplicate API calls
 - Clear search restores the original paginated list
+
+## Architecture Decisions
+
+### ADR-001: Assemblers live inside their feature folder, not in App/DI/
+
+**Decision:** Each screen's assembler (e.g., `CharacterListAssembler`) lives in its own feature folder under `Presentation/` alongside the View and ViewModel it wires up.
+
+**Rationale:** As the app grows, keeping all assemblers in a central `App/DI/` folder would create a bottleneck — every new screen would require touching that folder. Placing the assembler next to its feature means all files that belong to a screen (View, ViewModel, components, assembler) are in one place. This makes it easy to add, remove, or refactor a feature without navigating across unrelated folders.
+
+**Rule:** `DependencyContainer` stays in `App/DI/` because it owns shared cross-feature dependencies. Assemblers are per-feature and travel with their feature.
+
+---
 
 ## Security
 
@@ -448,6 +474,7 @@ reporter: "xcode"
 - Each file adds a `static func stub(...)` extension with sensible defaults for every parameter
 - Domain stubs: `DisneyCharacter+Stub.swift`, `PaginationInfo+Stub.swift`
 - Data stubs: `CharacterDTO+Stub.swift`, `PaginationInfoDTO+Stub.swift`, `CharacterListResponseDTO+Stub.swift`
+- Presentation stubs: `CharacterPresentationModel+Stub.swift`
 
 ### Snapshot Tests
 - Live in the **unit test target** (`DisneyCharactersTests/SnapshotTests/`), NOT in the UITests target
@@ -459,6 +486,7 @@ reporter: "xcode"
 - Test in multiple device widths (iPhone SE, iPhone 16, iPad)
 - Record snapshots first (`isRecording = true`), then assert
 - Store reference images in `DisneyCharactersTests/SnapshotTests/__Snapshots__/`
+- **Test method names must be globally unique** across ALL snapshot test classes — Xcode copies reference PNGs flat into the test bundle (no subdirectory per class), so two classes with the same method name cause a "Multiple commands produce" build error. Use a class-specific prefix for ambiguous names (e.g. `test_row_accessibilityExtraExtraExtraLarge` instead of `test_accessibilityExtraExtraExtraLarge`)
 
 ## Accessibility
 
@@ -500,7 +528,7 @@ enum AccessibilityID {
 - Never put raw strings in Views — always reference catalog keys
 - String key constants in `Content` and `AccessibilityContent` enums **must be typed as `LocalizedStringKey`**, not `String` — SwiftUI only performs catalog lookup when `Text()` receives a `LocalizedStringKey`, not a plain `String` variable
 - Organize keys by screen: `splash.title`, `characterList.searchPlaceholder`, `error.networkFailure`
-- Shared view keys already in use: `error.retry.button`, `error.retry.hint`, `loading.accessibilityLabel`
+- The `Localizable.xcstrings` catalog is the source of truth for all keys — do not maintain a duplicate list here
 
 ## SPM Dependencies
 
@@ -526,7 +554,7 @@ Add in Xcode > Project > Package Dependencies:
 - Each row: character thumbnail (Kingfisher) + character name
 - Loading indicator during fetch
 - Empty state for no results
-- Error state with retry button
+- Error state — retry button shown only for retryable errors (`.networkFailure`, `.unexpected`); hidden for `.noInternetConnection` and `.characterNotFound`
 - Pull-to-refresh support
 - Search: local filter first → remote API fallback → merge into cache
 - Accessibility: search bar labeled, each row labeled with character name

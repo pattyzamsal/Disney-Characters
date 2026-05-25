@@ -1,15 +1,9 @@
-//
-//  DisneyCharactersApp.swift
-//  DisneyCharacters
-//
-//  Created by Patricia Zambrano on 24/05/26.
-//
-
 import SwiftUI
 
 @main
 struct DisneyCharactersApp: App {
     @State private var router = AppRouter()
+    private let container = DependencyContainer()
 
     var body: some Scene {
         WindowGroup {
@@ -18,7 +12,7 @@ struct DisneyCharactersApp: App {
                     .navigationDestination(for: AppRoute.self) { route in
                         switch route {
                         case .characterList:
-                            EmptyView()
+                            CharacterListAssembler.make(container: container, router: router)
                         case .characterDetail:
                             EmptyView()
                         }
