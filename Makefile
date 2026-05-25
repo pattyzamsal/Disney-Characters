@@ -1,6 +1,9 @@
 SHELL := /bin/bash
 
-.PHONY: install generate open mocks lint help
+CONFIG_DIR := Disney\ Characters/DisneyCharacters/Configuration
+API_BASE_URL := https:/$()/api.disneyapi.dev
+
+.PHONY: install config generate open mocks lint help
 
 help: ## Show available commands
 	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) \
@@ -9,9 +12,19 @@ help: ## Show available commands
 install: ## Install required tools and generate the Xcode project (run this first)
 	@echo "→ Installing tools (xcodegen, swiftlint, sourcery)..."
 	@brew install xcodegen swiftlint sourcery
+	@$(MAKE) config
 	@$(MAKE) generate
 	@echo ""
 	@echo "✓ Setup complete. Run 'make open' to open the project in Xcode."
+
+config: ## Create xcconfig files if they do not exist (safe to re-run)
+	@for env in Dev Staging Prod; do \
+		file="$(CONFIG_DIR)/$$env.xcconfig"; \
+		if [ ! -f "$$file" ]; then \
+			echo "→ Creating $$file..."; \
+			printf 'API_BASE_URL = $(API_BASE_URL)\n' > "$$file"; \
+		fi; \
+	done
 
 generate: ## Regenerate the Xcode project from project.yml
 	@echo "→ Generating Xcode project..."

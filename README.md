@@ -78,6 +78,7 @@ make open
 | Command | Description |
 |---------|-------------|
 | `make install` | Install tools and generate the project (run this first) |
+| `make config` | Create missing xcconfig files (called automatically by `make install`) |
 | `make generate` | Regenerate the project from `project.yml` after changes |
 | `make open` | Open the project in Xcode |
 | `make mocks` | Regenerate Sourcery mocks after protocol changes |
