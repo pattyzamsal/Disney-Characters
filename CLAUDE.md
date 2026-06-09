@@ -503,7 +503,8 @@ xcodebuild test -scheme DisneyCharactersTests -testPlan AllTests      -destinati
 - Test with Dynamic Type sizes (`.accessibilityExtraExtraExtraLarge`)
 - Test in multiple device widths (iPhone SE, iPhone 16, iPad)
 - Record snapshots first (`isRecording = true`), then assert
-- Store reference images in `DisneyCharactersTests/SnapshotTests/__Snapshots__/`
+- Store reference images in `DisneyCharactersTests/SnapshotTests/__Snapshots__/` — these PNGs **are committed** to the repo, so CI and fresh clones run green
+- **Pinned recording environment:** always re-record on **iPhone 16 / iOS 26.2** simulator (`-destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'`). Different simulators or OS versions render text and gradients differently and will produce non-deterministic diffs
 - **Test method names must be globally unique** across ALL snapshot test classes — Xcode copies reference PNGs flat into the test bundle (no subdirectory per class), so two classes with the same method name cause a "Multiple commands produce" build error. Use a class-specific prefix for ambiguous names (e.g. `test_row_accessibilityExtraExtraExtraLarge` instead of `test_accessibilityExtraExtraExtraLarge`)
 
 ## Accessibility
