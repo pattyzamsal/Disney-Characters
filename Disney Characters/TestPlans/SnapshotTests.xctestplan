@@ -16,9 +16,11 @@
         "CharacterListViewModelTests",
         "CharacterPresentationMapperTests",
         "DefaultCharacterRepositoryTests",
+        "EndpointTests",
         "GetCharacterDetailUseCaseTests",
         "GetCharactersUseCaseTests",
-        "SearchCharactersUseCaseTests"
+        "SearchCharactersUseCaseTests",
+        "URLSessionHTTPClientTests"
       ],
       "target": {
         "containerPath": "container:DisneyCharacters.xcodeproj",
