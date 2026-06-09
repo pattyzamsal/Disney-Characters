@@ -151,12 +151,6 @@ targets:
         TEST_TARGET_NAME: DisneyCharacters
     dependencies:
       - target: DisneyCharacters
-      - package: swift-snapshot-testing
-        product: SnapshotTesting
-      - package: swift-snapshot-testing
-        product: InlineSnapshotTesting
-      - package: swift-snapshot-testing
-        product: SnapshotTestingCustomDump
 
 # ─── Schemes ─────────────────────────────────────────────────────────────────
 

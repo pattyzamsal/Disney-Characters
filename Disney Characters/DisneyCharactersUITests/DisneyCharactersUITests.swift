@@ -1,42 +1,69 @@
-//
-//  DisneyCharactersUITests.swift
-//  DisneyCharactersUITests
-//
-//  Created by Patricia Zambrano on 24/05/26.
-//
-
 import XCTest
 
 final class DisneyCharactersUITests: XCTestCase {
+    private var app: XCUIApplication!
 
     override func setUpWithError() throws {
-        // Put setup code here. This method is called before the invocation of each test method in the class.
-
-        // In UI tests it is usually best to stop immediately when a failure occurs.
         continueAfterFailure = false
-
-        // In UI tests it’s important to set the initial state - such as interface orientation -
-        // required for your tests before they run. The setUp method is a good place to do this.
+        app = XCUIApplication()
+        app.launch()
     }
 
     override func tearDownWithError() throws {
-        // Put teardown code here. This method is called after the invocation of each test method in the class.
+        app = nil
     }
 
-    @MainActor
-    func testExample() throws {
-        // UI tests must launch the application that they test.
-        let app = XCUIApplication()
-        app.launch()
+    // MARK: - Splash
 
-        // Use XCTAssert and related functions to verify your tests produce the correct results.
+    func testSplash_logoAndStartButtonAreVisible() {
+        XCTAssertTrue(app.images["splash_logo"].exists)
+        XCTAssertTrue(app.buttons["splash_start_button"].exists)
     }
 
-    @MainActor
-    func testLaunchPerformance() throws {
-        // This measures how long it takes to launch your application.
-        measure(metrics: [XCTApplicationLaunchMetric()]) {
-            XCUIApplication().launch()
-        }
+    func testSplash_tapStart_showsCharacterList() {
+        app.buttons["splash_start_button"].tap()
+        XCTAssertTrue(
+            app.otherElements["character_list_search_bar"].waitForExistence(timeout: 5)
+        )
+    }
+
+    // MARK: - Character List
+
+    func testCharacterList_loadsRowsFromAPI() {
+        app.buttons["splash_start_button"].tap()
+        let firstRow = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'character_list_row_'")
+        ).firstMatch
+        XCTAssertTrue(firstRow.waitForExistence(timeout: 30))
+    }
+
+    // MARK: - Navigation: List → Detail
+
+    func testCharacterList_tapRow_showsCharacterDetail() {
+        app.buttons["splash_start_button"].tap()
+        let firstRow = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'character_list_row_'")
+        ).firstMatch
+        XCTAssertTrue(firstRow.waitForExistence(timeout: 30))
+        firstRow.tap()
+        XCTAssertTrue(
+            app.images["character_detail_image"].waitForExistence(timeout: 30)
+        )
+    }
+
+    func testCharacterDetail_backButton_returnsToCharacterList() {
+        app.buttons["splash_start_button"].tap()
+        let firstRow = app.buttons.matching(
+            NSPredicate(format: "identifier BEGINSWITH 'character_list_row_'")
+        ).firstMatch
+        XCTAssertTrue(firstRow.waitForExistence(timeout: 30))
+        firstRow.tap()
+        XCTAssertTrue(
+            app.images["character_detail_image"].waitForExistence(timeout: 30)
+        )
+        app.navigationBars.buttons.firstMatch.tap()
+        XCTAssertTrue(
+            app.otherElements["character_list_search_bar"].waitForExistence(timeout: 5)
+        )
     }
 }
