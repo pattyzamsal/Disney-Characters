@@ -81,7 +81,7 @@ make open
 | `make config` | Create missing xcconfig files (called automatically by `make install`) |
 | `make generate` | Regenerate the project from `project.yml` after changes |
 | `make open` | Open the project in Xcode |
-| `make mocks` | Regenerate Sourcery mocks after protocol changes |
+| `make mocks` | Manually regenerate Sourcery mocks (also runs automatically on every test build) |
 | `make lint` | Run SwiftLint |
 
 ### Running Tests
@@ -194,13 +194,22 @@ Written with `import Testing`, `@Test`, and `#expect()`. Each layer is tested in
 - **Domain:** All three use cases
 - **Presentation:** Presentation mappers, both view models
 
-Dependencies are mocked using Sourcery-generated mocks. After any protocol change, run `make mocks` to regenerate.
+Dependencies are mocked using Sourcery-generated mocks. The mocks regenerate **automatically** on every `DisneyCharactersTests` build via a `preBuildScripts` entry in `project.yml` — protocol changes never lead to stale mocks. The generated file (`AutoMockable.generated.swift`) is gitignored as a build artifact. Use `make mocks` when you want to regenerate manually outside of a build (e.g. to inspect the diff before opening Xcode).
 
 ### Snapshot Tests — XCTest + swift-snapshot-testing
 
 Snapshot tests live in the **unit test target** (`DisneyCharactersTests/SnapshotTests/`), not in the UITests target. This is intentional: Xcode 16 forces `-module-alias Testing=_Testing_Unavailable` on all UI test bundles, making swift-snapshot-testing (which links against Testing.framework since 1.17+) permanently incompatible with UITest targets.
 
 Each screen is tested in: light mode, dark mode, iPhone SE, and Dynamic Type `accessibilityExtraExtraExtraLarge`.
+
+**Reference images are committed** to `DisneyCharactersTests/SnapshotTests/__Snapshots__/`, so fresh clones run green without a recording step.
+
+**Pinned recording environment:** always re-record on the **iPhone 16 / iOS 26.2** simulator. Different simulators or OS versions render text and gradients differently and will produce non-deterministic diffs:
+
+```bash
+xcodebuild test -scheme DisneyCharactersTests -testPlan SnapshotTests \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'
+```
 
 ### Test Plans
 
@@ -230,7 +239,7 @@ The project uses the iOS 17 Observation framework (`@Observable`) instead of Com
 
 ### Cache-first repository strategy
 
-`DefaultCharacterRepository` returns cached data immediately and fetches from the network only when the cache is cold. Search queries filter the local cache first and only fall back to the remote API if no local match is found — remote results are then merged into the cache. This gives the app offline support and reduces unnecessary network calls.
+`DefaultCharacterRepository` returns cached data immediately and fetches from the network only when the cache is cold. Search queries filter the local cache first and only fall back to the remote API if no local match is found — remote results are then merged into the cache. This gives the app offline support and reduces unnecessary network calls. Pull-to-refresh bypasses the cache via an explicit `forceRefresh: true` flag so users can always retrieve fresh data on demand.
 
 ### `CancellationError` handled silently in all ViewModels
 
