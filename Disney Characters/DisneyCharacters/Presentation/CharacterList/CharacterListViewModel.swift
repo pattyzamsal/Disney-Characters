@@ -14,6 +14,7 @@ final class CharacterListViewModel {
     private var currentPage = 1
     private var searchQuery = ""
     private var searchTask: Task<Void, Never>?
+    private var paginationTask: Task<Void, Never>?
 
     init(getCharactersUseCase: GetCharactersUseCaseProtocol,
          searchCharactersUseCase: SearchCharactersUseCaseProtocol,
@@ -33,6 +34,8 @@ final class CharacterListViewModel {
         searchQuery = ""
         searchTask?.cancel()
         searchTask = nil
+        paginationTask?.cancel()
+        paginationTask = nil
         currentPage = 1
         await fetchPage(1, replacing: true, forceRefresh: true)
     }
@@ -41,11 +44,14 @@ final class CharacterListViewModel {
         guard hasMorePages, !isLoadingMore else { return }
         guard case .loaded(let characters) = viewState,
               characters.last?.id == currentItem.id else { return }
-        Task { await loadNextPage() }
+        paginationTask?.cancel()
+        paginationTask = Task { await loadNextPage() }
     }
 
     func updateSearch(query: String) {
         searchTask?.cancel()
+        paginationTask?.cancel()
+        paginationTask = nil
         let trimmed = query.trimmingCharacters(in: .whitespaces)
 
         if trimmed.isEmpty {
@@ -75,6 +81,7 @@ private extension CharacterListViewModel {
     func fetchPage(_ page: Int, replacing: Bool, forceRefresh: Bool) async {
         do {
             let result = try await getCharactersUseCase.execute(page: page, forceRefresh: forceRefresh)
+            guard !Task.isCancelled else { return }
             let newModels = result.characters.map(CharacterPresentationMapper.toPresentation)
 
             if replacing {
