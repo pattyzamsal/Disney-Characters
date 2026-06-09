@@ -45,21 +45,6 @@ struct CharacterLocalDataSourceTests {
         #expect(cached?.first?.name == "Updated")
     }
 
-    @Test("searchCachedCharacters matches case-insensitively across cached entries")
-    func searchMatchesCaseInsensitively() async {
-        let sut = CharacterLocalDataSource()
-        await sut.mergeCharacters([
-            DisneyCharacter.stub(id: 1, name: "Mickey Mouse"),
-            DisneyCharacter.stub(id: 2, name: "Minnie Mouse"),
-            DisneyCharacter.stub(id: 3, name: "Donald Duck")
-        ])
-
-        let results = await sut.searchCachedCharacters(name: "mouse")
-
-        #expect(results.count == 2)
-        #expect(results.allSatisfy { $0.name.contains("Mouse") })
-    }
-
     @Test("mergeCharacters overwrites existing entries by id")
     func mergeOverwritesById() async {
         let sut = CharacterLocalDataSource()

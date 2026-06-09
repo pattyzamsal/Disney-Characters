@@ -43,10 +43,6 @@ extension DefaultCharacterRepository: CharacterRepositoryProtocol {
     }
 
     func searchCharacters(name: String) async throws -> [DisneyCharacter] {
-        let localResults = await localDataSource.searchCachedCharacters(name: name)
-        if !localResults.isEmpty {
-            return localResults
-        }
         do {
             let response = try await remoteDataSource.searchCharacters(name: name)
             let characters = response.data.map { CharacterDTOMapper.toDomain($0) }

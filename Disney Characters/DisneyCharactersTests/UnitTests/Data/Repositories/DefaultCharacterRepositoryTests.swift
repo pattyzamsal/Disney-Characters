@@ -252,20 +252,8 @@ struct DefaultCharacterRepositoryTests {
             sut = DefaultCharacterRepository(remoteDataSource: remoteMock, localDataSource: localMock)
         }
 
-        @Test("Returns local results without calling remote when cache has matches")
-        func returnsLocalResultsWhenCacheHasMatches() async throws {
-            let localResults = [DisneyCharacter.stub(), DisneyCharacter.stub(id: 2, name: "Mini Mouse")]
-            localMock.searchCachedCharactersReturnValue = localResults
-
-            let result = try await sut.searchCharacters(name: "Mouse")
-
-            #expect(result == localResults)
-            #expect(remoteMock.searchCharactersCallsCount == 0)
-        }
-
-        @Test("Calls remote when local search returns no results")
-        func callsRemoteWhenLocalIsEmpty() async throws {
-            localMock.searchCachedCharactersReturnValue = []
+        @Test("Always calls remote regardless of local cache state")
+        func alwaysCallsRemote() async throws {
             remoteMock.searchCharactersReturnValue = .stub(data: [.stub(name: "Mickey Mouse")])
 
             _ = try await sut.searchCharacters(name: "Mickey")
@@ -276,7 +264,6 @@ struct DefaultCharacterRepositoryTests {
 
         @Test("Maps remote search response to domain models")
         func mapsRemoteSearchResponseToDomainModels() async throws {
-            localMock.searchCachedCharactersReturnValue = []
             let dto = CharacterDTO.stub(id: 5, name: "Pluto")
             remoteMock.searchCharactersReturnValue = CharacterListResponseDTO.stub(data: [dto])
 
@@ -289,7 +276,6 @@ struct DefaultCharacterRepositoryTests {
 
         @Test("Merges remote results into local cache after search")
         func mergesRemoteResultsIntoLocalCache() async throws {
-            localMock.searchCachedCharactersReturnValue = []
             remoteMock.searchCharactersReturnValue = .stub(data: [.stub(id: 5)])
 
             _ = try await sut.searchCharacters(name: "Pluto")
@@ -301,7 +287,6 @@ struct DefaultCharacterRepositoryTests {
 
         @Test("Throws noInternetConnection when remote has no connection")
         func throwsNoInternetConnectionError() async {
-            localMock.searchCachedCharactersReturnValue = []
             remoteMock.searchCharactersThrowableError = NetworkError.noConnection
 
             await #expect(throws: DomainError.noInternetConnection) {
@@ -311,7 +296,6 @@ struct DefaultCharacterRepositoryTests {
 
         @Test("Throws networkFailure on timeout")
         func throwsNetworkFailureOnTimeout() async {
-            localMock.searchCachedCharactersReturnValue = []
             remoteMock.searchCharactersThrowableError = NetworkError.timeout
 
             await #expect(throws: DomainError.networkFailure("Request timed out")) {

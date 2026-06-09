@@ -7,7 +7,6 @@ protocol CharacterLocalDataSourceProtocol: Sendable {
     func getCachedPaginationInfo(page: Int) async -> PaginationInfo?
     func cachePaginationInfo(_ info: PaginationInfo, page: Int) async
     func getCachedCharacter(id: Int) async -> DisneyCharacter?
-    func searchCachedCharacters(name: String) async -> [DisneyCharacter]
     func mergeCharacters(_ characters: [DisneyCharacter]) async
 }
 
@@ -37,10 +36,6 @@ extension CharacterLocalDataSource: CharacterLocalDataSourceProtocol {
 
     func getCachedCharacter(id: Int) -> DisneyCharacter? {
         characterCache[id]
-    }
-
-    func searchCachedCharacters(name: String) -> [DisneyCharacter] {
-        characterCache.values.filter { $0.name.localizedCaseInsensitiveContains(name) }
     }
 
     func mergeCharacters(_ characters: [DisneyCharacter]) {
