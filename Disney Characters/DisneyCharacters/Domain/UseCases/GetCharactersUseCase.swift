@@ -1,5 +1,5 @@
 // sourcery: AutoMockable
-protocol GetCharactersUseCaseProtocol {
+protocol GetCharactersUseCaseProtocol: Sendable {
     func execute(page: Int, forceRefresh: Bool) async throws -> (characters: [DisneyCharacter], info: PaginationInfo)
 }
 

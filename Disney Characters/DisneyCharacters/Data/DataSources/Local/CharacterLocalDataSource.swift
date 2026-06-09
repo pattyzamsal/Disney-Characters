@@ -1,7 +1,7 @@
 import Foundation
 
 // sourcery: AutoMockable
-protocol CharacterLocalDataSourceProtocol {
+protocol CharacterLocalDataSourceProtocol: Sendable {
     func getCachedCharacters(page: Int) async -> [DisneyCharacter]?
     func cacheCharacters(_ characters: [DisneyCharacter], page: Int) async
     func getCachedPaginationInfo(page: Int) async -> PaginationInfo?

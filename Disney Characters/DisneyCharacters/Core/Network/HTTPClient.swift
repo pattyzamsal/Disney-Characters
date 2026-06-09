@@ -1,5 +1,5 @@
 import Foundation
 
-protocol HTTPClient {
+protocol HTTPClient: Sendable {
     func perform<T: Decodable>(_ endpoint: Endpoint) async throws -> T
 }

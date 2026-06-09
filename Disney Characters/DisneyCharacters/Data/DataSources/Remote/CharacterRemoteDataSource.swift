@@ -1,7 +1,7 @@
 import Foundation
 
 // sourcery: AutoMockable
-protocol CharacterRemoteDataSourceProtocol {
+protocol CharacterRemoteDataSourceProtocol: Sendable {
     func getCharacters(page: Int) async throws -> CharacterListResponseDTO
     func getCharacterDetail(id: Int) async throws -> CharacterDTO
     func searchCharacters(name: String) async throws -> CharacterListResponseDTO

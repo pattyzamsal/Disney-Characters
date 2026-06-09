@@ -8,8 +8,8 @@ final class URLProtocolStub: URLProtocol {
     }
 
     private static let lock = NSLock()
-    private static var currentStub: Stub?
-    private static var observedRequests: [URLRequest] = []
+    nonisolated(unsafe) private static var currentStub: Stub?
+    nonisolated(unsafe) private static var observedRequests: [URLRequest] = []
 
     static func stub(data: Data?, response: URLResponse?, error: Error?) {
         lock.lock()
@@ -36,14 +36,14 @@ final class URLProtocolStub: URLProtocol {
         return URLSession(configuration: config)
     }
 
-    override class func canInit(with request: URLRequest) -> Bool {
+    override static func canInit(with request: URLRequest) -> Bool {
         lock.lock()
         observedRequests.append(request)
         lock.unlock()
         return true
     }
 
-    override class func canonicalRequest(for request: URLRequest) -> URLRequest {
+    override static func canonicalRequest(for request: URLRequest) -> URLRequest {
         request
     }
 

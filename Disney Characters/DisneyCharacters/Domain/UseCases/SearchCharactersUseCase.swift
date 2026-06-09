@@ -1,5 +1,5 @@
 // sourcery: AutoMockable
-protocol SearchCharactersUseCaseProtocol {
+protocol SearchCharactersUseCaseProtocol: Sendable {
     func execute(name: String) async throws -> [DisneyCharacter]
 }
 
