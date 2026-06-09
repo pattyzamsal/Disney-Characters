@@ -26,7 +26,7 @@ final class CharacterListViewModel {
     func loadCharacters() async {
         guard viewState == .idle || viewState == .loading else { return }
         viewState = .loading
-        await fetchPage(1, replacing: true)
+        await fetchPage(1, replacing: true, forceRefresh: false)
     }
 
     func refresh() async {
@@ -34,7 +34,7 @@ final class CharacterListViewModel {
         searchTask?.cancel()
         searchTask = nil
         currentPage = 1
-        await fetchPage(1, replacing: true)
+        await fetchPage(1, replacing: true, forceRefresh: true)
     }
 
     func loadMoreIfNeeded(currentItem: CharacterPresentationModel) {
@@ -72,9 +72,9 @@ final class CharacterListViewModel {
 }
 
 private extension CharacterListViewModel {
-    func fetchPage(_ page: Int, replacing: Bool) async {
+    func fetchPage(_ page: Int, replacing: Bool, forceRefresh: Bool) async {
         do {
-            let result = try await getCharactersUseCase.execute(page: page)
+            let result = try await getCharactersUseCase.execute(page: page, forceRefresh: forceRefresh)
             let newModels = result.characters.map(CharacterPresentationMapper.toPresentation)
 
             if replacing {
@@ -100,7 +100,7 @@ private extension CharacterListViewModel {
     func loadNextPage() async {
         isLoadingMore = true
         defer { isLoadingMore = false }
-        await fetchPage(currentPage + 1, replacing: false)
+        await fetchPage(currentPage + 1, replacing: false, forceRefresh: false)
     }
 
     func performSearch(_ query: String) async {

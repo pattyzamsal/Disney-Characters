@@ -12,8 +12,9 @@ final class DefaultCharacterRepository {
 }
 
 extension DefaultCharacterRepository: CharacterRepositoryProtocol {
-    func getCharacters(page: Int) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
-        if let cachedCharacters = localDataSource.getCachedCharacters(page: page),
+    func getCharacters(page: Int, forceRefresh: Bool) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
+        if !forceRefresh,
+           let cachedCharacters = localDataSource.getCachedCharacters(page: page),
            let cachedInfo = localDataSource.getCachedPaginationInfo(page: page) {
             return (cachedCharacters, cachedInfo)
         }

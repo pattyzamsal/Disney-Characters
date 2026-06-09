@@ -127,6 +127,24 @@ struct CharacterListViewModelTests {
         #expect(sut.viewState == .loaded(expected))
     }
 
+    @Test("refresh calls use case with forceRefresh true")
+    func refreshCallsUseCaseWithForceRefreshTrue() async {
+        getCharactersMock.executeReturnValue = ([], PaginationInfo.stub())
+
+        await sut.refresh()
+
+        #expect(getCharactersMock.executeReceivedArguments?.forceRefresh == true)
+    }
+
+    @Test("loadCharacters calls use case with forceRefresh false")
+    func loadCharactersCallsUseCaseWithForceRefreshFalse() async {
+        getCharactersMock.executeReturnValue = ([], PaginationInfo.stub())
+
+        await sut.loadCharacters()
+
+        #expect(getCharactersMock.executeReceivedArguments?.forceRefresh == false)
+    }
+
     // MARK: - loadMoreIfNeeded
 
     @Test("loadMoreIfNeeded appends next page when current item is last")

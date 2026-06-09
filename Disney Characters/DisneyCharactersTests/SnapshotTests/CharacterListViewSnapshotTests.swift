@@ -115,7 +115,7 @@ private extension CharacterListViewSnapshotTests {
 }
 
 private final class NeverLoadingGetCharactersUseCase: GetCharactersUseCaseProtocol {
-    func execute(page: Int) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
+    func execute(page: Int, forceRefresh: Bool) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
         try await Task.sleep(for: .seconds(999))
         throw DomainError.unexpected
     }

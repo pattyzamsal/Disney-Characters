@@ -154,7 +154,7 @@ private func previewViewModel(
 }
 
 private final class PreviewGetCharactersUseCase: GetCharactersUseCaseProtocol {
-    func execute(page: Int) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
+    func execute(page: Int, forceRefresh: Bool) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
         let characters = (1...10).map { index in
             DisneyCharacter(
                 id: index,
@@ -174,7 +174,7 @@ private final class PreviewGetCharactersUseCase: GetCharactersUseCaseProtocol {
 }
 
 private final class PreviewNeverLoadingUseCase: GetCharactersUseCaseProtocol {
-    func execute(page: Int) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
+    func execute(page: Int, forceRefresh: Bool) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
         try await Task.sleep(for: .seconds(999))
         throw DomainError.unexpected
     }
