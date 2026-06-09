@@ -4,7 +4,7 @@ options:
   bundleIdPrefix: com.disneycharacters.publicapp
   deploymentTarget:
     iOS: "26.2"
-  xcodeVersion: "16.0"
+  xcodeVersion: "26.2"
   generateEmptyDirectories: true
   defaultConfig: Debug
 

@@ -6,8 +6,8 @@ Native iOS application built with SwiftUI that consumes the Disney API (https://
 ## Tech Stack
 - **Language:** Swift 6.0+
 - **UI:** SwiftUI
-- **Min Target:** iOS 17.0
-- **Build:** Xcode 16+
+- **Min Target:** iOS 26.2
+- **Build:** Xcode 26.2+
 - **Dependency Manager:** Swift Package Manager (SPM)
 - **Linting:** SwiftLint
 - **Mocking:** Sourcery
@@ -304,7 +304,7 @@ Previews are always wrapped in `#if DEBUG` so they are stripped from Release and
 - **Cache-first strategy (offline support):**
   - `getCharacters(page:)` — returns cached characters + PaginationInfo if available; fetches remote otherwise and caches both
   - `getCharacterDetail(id:)` — returns cached character if available; fetches remote otherwise
-  - `searchCharacters(name:)` — filters local cache first; falls back to remote only if cache has no match; merges remote results into cache
+  - `searchCharacters(name:)` — always calls remote API; merges results into cache (local cache cannot guarantee exhaustive results across all API pages)
 
 ### Mappers
 - **DTO → Domain:** `CharacterDTOMapper.toDomain(_ dto: CharacterDTO) -> DisneyCharacter`
@@ -347,9 +347,8 @@ Previews are always wrapped in `#if DEBUG` so they are stripped from Release and
 
 ### Search Implementation (List View)
 - Search bar with debounce (500ms) using `Task` with `try await Task.sleep`
-- **Local-first strategy:** filter cached characters by name first
-- **Remote fallback:** if local cache has no match, call `GET /character?name=<query>`
-- Merge remote results into local cache to avoid duplicate API calls
+- **Always-remote:** call `GET /character?name=<query>` on every search — local cache only contains pages the user has scrolled through and cannot give exhaustive results
+- Merge remote results into local cache after each search to warm subsequent detail fetches
 - Clear search restores the original paginated list
 
 ## Architecture Decisions
@@ -578,7 +577,7 @@ Add in Xcode > Project > Package Dependencies:
 - Empty state for no results
 - Error state — retry button shown only for retryable errors (`.networkFailure`, `.unexpected`); hidden for `.noInternetConnection` and `.characterNotFound`
 - Pull-to-refresh support
-- Search: local filter first → remote API fallback → merge into cache
+- Search: always calls remote API → merge into cache
 - Accessibility: search bar labeled, each row labeled with character name
 
 ### 3. Character Detail View (`CharacterDetailView`)

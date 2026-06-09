@@ -26,7 +26,7 @@ Disney Characters connects to the public [Disney API](https://github.com/ManuCas
 
 **Key features:**
 - Paginated character list with infinite scroll
-- Debounced search (local cache first, remote fallback)
+- Debounced search (always calls remote API, results merged into cache)
 - Offline support via local cache
 - Character detail with full appearance history
 - Pull-to-refresh
@@ -60,7 +60,7 @@ The `.xcodeproj` is not committed to the repository — it is generated from `Di
 ### Prerequisites
 
 - macOS with [Homebrew](https://brew.sh/) installed
-- Xcode 16 or newer
+- Xcode 26.2 or newer
 
 ### Installation
 
@@ -91,15 +91,19 @@ The project uses **test plans** to run unit and snapshot tests independently:
 ```bash
 # Unit tests only (default when pressing Cmd+U)
 xcodebuild test -scheme DisneyCharactersTests -testPlan UnitTests \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'
 
-# Snapshot tests only
+# Snapshot tests only (must use the pinned simulator — see Pinned recording environment)
 xcodebuild test -scheme DisneyCharactersTests -testPlan SnapshotTests \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'
 
 # Everything
 xcodebuild test -scheme DisneyCharactersTests -testPlan AllTests \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'
+
+# Smoke tests (UITests, hits real Disney API)
+xcodebuild test -scheme DisneyCharactersUITests \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'
 ```
 
 You can also switch plans inside Xcode via `Product → Test Plan`.
@@ -239,7 +243,9 @@ The project uses the iOS 17 Observation framework (`@Observable`) instead of Com
 
 ### Cache-first repository strategy
 
-`DefaultCharacterRepository` returns cached data immediately and fetches from the network only when the cache is cold. Search queries filter the local cache first and only fall back to the remote API if no local match is found — remote results are then merged into the cache. This gives the app offline support and reduces unnecessary network calls. Pull-to-refresh bypasses the cache via an explicit `forceRefresh: true` flag so users can always retrieve fresh data on demand.
+`DefaultCharacterRepository` returns cached data immediately and fetches from the network only when the cache is cold. Pull-to-refresh bypasses the cache via an explicit `forceRefresh: true` flag so users can always retrieve fresh data on demand.
+
+Search always calls the remote API (`GET /character?name=<query>`), regardless of what is cached. A local-first search would silently return incomplete results — the local cache only contains characters from pages the user has already scrolled through, while the API searches across all ~500 pages. Remote results are merged into the local cache after each search to warm subsequent detail fetches.
 
 ### `CancellationError` handled silently in all ViewModels
 
