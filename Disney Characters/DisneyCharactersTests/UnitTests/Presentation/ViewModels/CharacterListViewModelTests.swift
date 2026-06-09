@@ -347,5 +347,4 @@ struct CharacterListViewModelTests {
             Issue.record("Expected loaded state")
         }
     }
-
 }

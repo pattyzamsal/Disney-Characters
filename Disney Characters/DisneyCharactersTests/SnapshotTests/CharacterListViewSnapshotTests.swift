@@ -98,7 +98,14 @@ private extension CharacterListViewSnapshotTests {
     @MainActor
     func makeErrorSUT() -> some View {
         NavigationStack {
-            CharacterListView(viewModel: makeViewModel(state: .error(String(localized: "error.networkFailure"), isRetryable: true)))
+            CharacterListView(
+                viewModel: makeViewModel(
+                    state: .error(
+                        String(localized: "error.networkFailure"),
+                        isRetryable: true
+                    )
+                )
+            )
         }
     }
 
