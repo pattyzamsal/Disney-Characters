@@ -456,9 +456,10 @@ reporter: "xcode"
 
 ### Sourcery Mocks
 - Annotate protocols: `// sourcery: AutoMockable`
-- Run Sourcery: `sourcery --sources "Disney Characters/DisneyCharacters" --templates Templates/AutoMockable.stencil --output "Disney Characters/DisneyCharactersTests/Mocks/Generated"`
 - Generated mocks go in `Tests/Mocks/Generated/` — never edit manually
-- Always regenerate after protocol changes
+- **Mocks regenerate automatically** on every `DisneyCharactersTests` build via a `preBuildScripts` entry in `project.yml`. Sourcery must be installed locally (`brew install sourcery`, or `make install`); the build phase falls back to a warning if it isn't.
+- Generated file (`AutoMockable.generated.swift`) is **gitignored** — it is a build artifact, not source.
+- For manual regeneration (e.g., to inspect changes before building): `make mocks`
 - **Nil return value gotcha:** Sourcery generates `var xReturnValue: T?!` for optional-returning methods. Setting this to bare `nil` crashes — the outer IUO becomes nil and force-unwraps. Use a typed nil instead:
   ```swift
   // Wrong — crashes at runtime
