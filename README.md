@@ -40,7 +40,7 @@ Disney Characters connects to the public [Disney API](https://github.com/ManuCas
 
 | Area | Tool |
 |------|------|
-| Language | Swift 5.0+ |
+| Language | Swift 6.0 |
 | UI | SwiftUI |
 | Minimum Target | iOS 26.2 |
 | Project Generation | XcodeGen |
@@ -252,6 +252,16 @@ Moving snapshot tests to `DisneyCharactersUITests` was the natural first instinc
 ### XcodeGen for project generation
 
 The `.xcodeproj` is generated from `project.yml` and is not committed to git. This eliminates merge conflicts on the project file, makes the project setup reproducible with a single `make install` command, and keeps the repository clean. All project configuration (targets, build settings, SPM packages, schemes, test plans) lives in a single readable YAML file.
+
+### Swift 6 language mode with full strict concurrency
+
+The project compiles with `SWIFT_VERSION: "6.0"` and `SWIFT_STRICT_CONCURRENCY: complete`. Swift 6 promotes all data-race warnings to errors, so the concurrency model had to be made explicit before enabling it:
+
+- All protocols that cross actor boundaries (`HTTPClient`, `CharacterRepositoryProtocol`, use case protocols) are `Sendable`.
+- `CharacterLocalDataSource` was converted from `final class` to `actor`, eliminating the data race that previously existed when multiple tasks accessed the in-memory cache concurrently.
+- Sourcery's `AutoMockable.stencil` was updated to emit `@unchecked Sendable` on generated mocks so they satisfy `Sendable` protocol requirements.
+- `URLProtocolStub`'s mutable class-level state is annotated `nonisolated(unsafe)` — it is explicitly protected by an `NSLock`, making the manual annotation correct.
+- A retroactive `@unchecked Sendable` conformance for `LocalizedStringKey` silences the checker for static string-key constants in Views (Apple's SDK exposes the conformance only internally; two informational "already stated" warnings remain and are benign).
 
 ### Global uniqueness for snapshot test method names
 

@@ -28,7 +28,7 @@ configs:
 
 settings:
   base:
-    SWIFT_VERSION: "5.0"
+    SWIFT_VERSION: "6.0"
     SWIFT_STRICT_CONCURRENCY: complete
     TARGETED_DEVICE_FAMILY: "1,2"
     ALWAYS_SEARCH_USER_PATHS: NO
