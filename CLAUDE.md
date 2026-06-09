@@ -174,7 +174,9 @@ DisneyCharacters/
     └── Fixtures/
         └── character_list_response.json   # stub JSON for tests
 
-UITests/                                   # DisneyCharactersUITests target (UI automation only)
+UITests/                                   # DisneyCharactersUITests target
+    ├── DisneyCharactersUITests.swift          # 5 smoke tests (Splash → List → Detail → back)
+    └── DisneyCharactersUITestsLaunchTests.swift  # launch screenshot in all UI configurations
 ```
 
 Note: Snapshot tests live in `DisneyCharactersTests/SnapshotTests/` (unit test target), not UITests.
@@ -503,7 +505,7 @@ xcodebuild test -scheme DisneyCharactersTests -testPlan AllTests      -destinati
 - Test in light and dark mode
 - Test with Dynamic Type sizes (`.accessibilityExtraExtraExtraLarge`)
 - Test in multiple device widths (iPhone SE, iPhone 16, iPad)
-- Record snapshots first (`isRecording = true`), then assert
+- To re-record snapshots wrap the call in `withSnapshotTesting(record: .all) { assertSnapshot(...) }`, run once, then remove the wrapper. Never pass `record:` to `assertSnapshot` directly — the `Bool` overload is deprecated in swift-snapshot-testing 1.17+
 - Store reference images in `DisneyCharactersTests/SnapshotTests/__Snapshots__/` — these PNGs **are committed** to the repo, so CI and fresh clones run green
 - **Pinned recording environment:** always re-record on **iPhone 16 / iOS 26.2** simulator (`-destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'`). Different simulators or OS versions render text and gradients differently and will produce non-deterministic diffs
 - **Test method names must be globally unique** across ALL snapshot test classes — Xcode copies reference PNGs flat into the test bundle (no subdirectory per class), so two classes with the same method name cause a "Multiple commands produce" build error. Use a class-specific prefix for ambiguous names (e.g. `test_row_accessibilityExtraExtraExtraLarge` instead of `test_accessibilityExtraExtraExtraLarge`)
@@ -609,7 +611,8 @@ make generate
 - **Run snapshot tests only:** `xcodebuild test -scheme DisneyCharactersTests -testPlan SnapshotTests -destination 'platform=iOS Simulator,name=iPhone 16'`
 - **Lint:** `swiftlint --config .swiftlint.yml`
 - **Generate mocks:** `sourcery --sources "Disney Characters/DisneyCharacters" --templates Templates/AutoMockable.stencil --output "Disney Characters/DisneyCharactersTests/Mocks/Generated"`
-- **Record snapshots:** Set `isRecording = true` in snapshot test, run once, set back to `false`
+- **Record snapshots:** Wrap the call in `withSnapshotTesting(record: .all) { assertSnapshot(...) }`, run once, then remove the wrapper
+- **Run smoke tests (UITests):** `xcodebuild test -scheme DisneyCharactersUITests -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'`
 
 ## Git Conventions
 - Branch naming: `feature/`, `bugfix/`, `refactor/`, `test/`
