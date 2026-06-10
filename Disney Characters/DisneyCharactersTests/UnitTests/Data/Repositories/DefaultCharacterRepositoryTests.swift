@@ -23,7 +23,7 @@ struct DefaultCharacterRepositoryTests {
             localMock.getCachedCharactersReturnValue = cachedCharacters
             localMock.getCachedPaginationInfoReturnValue = cachedInfo
 
-            let result = try await sut.getCharacters(page: 1)
+            let result = try await sut.getCharacters(page: 1, forceRefresh: false)
 
             #expect(result.characters == cachedCharacters)
             #expect(result.info == cachedInfo)
@@ -35,7 +35,7 @@ struct DefaultCharacterRepositoryTests {
             localMock.getCachedCharactersReturnValue = [DisneyCharacter]?.none
             remoteMock.getCharactersReturnValue = .stub()
 
-            _ = try await sut.getCharacters(page: 1)
+            _ = try await sut.getCharacters(page: 1, forceRefresh: false)
 
             #expect(remoteMock.getCharactersCallsCount == 1)
         }
@@ -46,7 +46,7 @@ struct DefaultCharacterRepositoryTests {
             localMock.getCachedPaginationInfoReturnValue = PaginationInfo?.none
             remoteMock.getCharactersReturnValue = .stub()
 
-            _ = try await sut.getCharacters(page: 1)
+            _ = try await sut.getCharacters(page: 1, forceRefresh: false)
 
             #expect(remoteMock.getCharactersCallsCount == 1)
         }
@@ -58,13 +58,12 @@ struct DefaultCharacterRepositoryTests {
             let infoDTO = PaginationInfoDTO.stub(totalPages: 10, count: 25)
             remoteMock.getCharactersReturnValue = CharacterListResponseDTO.stub(info: infoDTO, data: [dto])
 
-            let result = try await sut.getCharacters(page: 1)
+            let result = try await sut.getCharacters(page: 1, forceRefresh: false)
 
             #expect(result.characters.count == 1)
             #expect(result.characters[0].id == 42)
             #expect(result.characters[0].name == "Donald Duck")
-            #expect(result.info.totalPages == 10)
-            #expect(result.info.count == 25)
+            #expect(result.info.hasNextPage == true)
         }
 
         @Test("Caches characters and pagination info after remote fetch")
@@ -72,7 +71,7 @@ struct DefaultCharacterRepositoryTests {
             localMock.getCachedCharactersReturnValue = [DisneyCharacter]?.none
             remoteMock.getCharactersReturnValue = .stub()
 
-            _ = try await sut.getCharacters(page: 3)
+            _ = try await sut.getCharacters(page: 3, forceRefresh: false)
 
             #expect(localMock.cacheCharactersCalled)
             #expect(localMock.cacheCharactersReceivedArguments?.page == 3)
@@ -86,7 +85,7 @@ struct DefaultCharacterRepositoryTests {
             remoteMock.getCharactersThrowableError = NetworkError.noConnection
 
             await #expect(throws: DomainError.noInternetConnection) {
-                _ = try await sut.getCharacters(page: 1)
+                _ = try await sut.getCharacters(page: 1, forceRefresh: false)
             }
         }
 
@@ -96,7 +95,7 @@ struct DefaultCharacterRepositoryTests {
             remoteMock.getCharactersThrowableError = NetworkError.serverError(statusCode: 404)
 
             await #expect(throws: DomainError.characterNotFound) {
-                _ = try await sut.getCharacters(page: 1)
+                _ = try await sut.getCharacters(page: 1, forceRefresh: false)
             }
         }
 
@@ -106,7 +105,7 @@ struct DefaultCharacterRepositoryTests {
             remoteMock.getCharactersThrowableError = NetworkError.serverError(statusCode: 500)
 
             await #expect(throws: DomainError.networkFailure("Server error: 500")) {
-                _ = try await sut.getCharacters(page: 1)
+                _ = try await sut.getCharacters(page: 1, forceRefresh: false)
             }
         }
 
@@ -116,8 +115,49 @@ struct DefaultCharacterRepositoryTests {
             remoteMock.getCharactersThrowableError = NetworkError.noData
 
             await #expect(throws: DomainError.unexpected) {
-                _ = try await sut.getCharacters(page: 1)
+                _ = try await sut.getCharacters(page: 1, forceRefresh: false)
             }
+        }
+
+        @Test("Bypasses cache and calls remote when forceRefresh is true")
+        func bypassesCacheWhenForceRefreshIsTrue() async throws {
+            localMock.getCachedCharactersReturnValue = [DisneyCharacter.stub()]
+            localMock.getCachedPaginationInfoReturnValue = PaginationInfo.stub()
+            remoteMock.getCharactersReturnValue = .stub()
+
+            _ = try await sut.getCharacters(page: 1, forceRefresh: true)
+
+            #expect(remoteMock.getCharactersCallsCount == 1)
+            #expect(localMock.getCachedCharactersCallsCount == 0)
+            #expect(localMock.getCachedPaginationInfoCallsCount == 0)
+        }
+
+        @Test("Overwrites cache with fresh data when forceRefresh is true")
+        func overwritesCacheOnForceRefresh() async throws {
+            localMock.getCachedCharactersReturnValue = [DisneyCharacter.stub(id: 1, name: "Stale")]
+            localMock.getCachedPaginationInfoReturnValue = PaginationInfo.stub()
+            let freshDTO = CharacterDTO.stub(id: 1, name: "Fresh")
+            remoteMock.getCharactersReturnValue = CharacterListResponseDTO.stub(data: [freshDTO])
+
+            let result = try await sut.getCharacters(page: 1, forceRefresh: true)
+
+            #expect(result.characters.count == 1)
+            #expect(result.characters[0].name == "Fresh")
+            #expect(localMock.cacheCharactersCalled)
+            #expect(localMock.cacheCharactersReceivedArguments?.characters.first?.name == "Fresh")
+            #expect(localMock.cachePaginationInfoCalled)
+        }
+
+        @Test("Propagates remote error without falling back to cache when forceRefresh is true")
+        func propagatesErrorOnForceRefreshFailure() async {
+            localMock.getCachedCharactersReturnValue = [DisneyCharacter.stub()]
+            localMock.getCachedPaginationInfoReturnValue = PaginationInfo.stub()
+            remoteMock.getCharactersThrowableError = NetworkError.noConnection
+
+            await #expect(throws: DomainError.noInternetConnection) {
+                _ = try await sut.getCharacters(page: 1, forceRefresh: true)
+            }
+            #expect(remoteMock.getCharactersCallsCount == 1)
         }
     }
 
@@ -211,20 +251,8 @@ struct DefaultCharacterRepositoryTests {
             sut = DefaultCharacterRepository(remoteDataSource: remoteMock, localDataSource: localMock)
         }
 
-        @Test("Returns local results without calling remote when cache has matches")
-        func returnsLocalResultsWhenCacheHasMatches() async throws {
-            let localResults = [DisneyCharacter.stub(), DisneyCharacter.stub(id: 2, name: "Mini Mouse")]
-            localMock.searchCachedCharactersReturnValue = localResults
-
-            let result = try await sut.searchCharacters(name: "Mouse")
-
-            #expect(result == localResults)
-            #expect(remoteMock.searchCharactersCallsCount == 0)
-        }
-
-        @Test("Calls remote when local search returns no results")
-        func callsRemoteWhenLocalIsEmpty() async throws {
-            localMock.searchCachedCharactersReturnValue = []
+        @Test("Always calls remote regardless of local cache state")
+        func alwaysCallsRemote() async throws {
             remoteMock.searchCharactersReturnValue = .stub(data: [.stub(name: "Mickey Mouse")])
 
             _ = try await sut.searchCharacters(name: "Mickey")
@@ -235,7 +263,6 @@ struct DefaultCharacterRepositoryTests {
 
         @Test("Maps remote search response to domain models")
         func mapsRemoteSearchResponseToDomainModels() async throws {
-            localMock.searchCachedCharactersReturnValue = []
             let dto = CharacterDTO.stub(id: 5, name: "Pluto")
             remoteMock.searchCharactersReturnValue = CharacterListResponseDTO.stub(data: [dto])
 
@@ -248,7 +275,6 @@ struct DefaultCharacterRepositoryTests {
 
         @Test("Merges remote results into local cache after search")
         func mergesRemoteResultsIntoLocalCache() async throws {
-            localMock.searchCachedCharactersReturnValue = []
             remoteMock.searchCharactersReturnValue = .stub(data: [.stub(id: 5)])
 
             _ = try await sut.searchCharacters(name: "Pluto")
@@ -260,7 +286,6 @@ struct DefaultCharacterRepositoryTests {
 
         @Test("Throws noInternetConnection when remote has no connection")
         func throwsNoInternetConnectionError() async {
-            localMock.searchCachedCharactersReturnValue = []
             remoteMock.searchCharactersThrowableError = NetworkError.noConnection
 
             await #expect(throws: DomainError.noInternetConnection) {
@@ -270,7 +295,6 @@ struct DefaultCharacterRepositoryTests {
 
         @Test("Throws networkFailure on timeout")
         func throwsNetworkFailureOnTimeout() async {
-            localMock.searchCachedCharactersReturnValue = []
             remoteMock.searchCharactersThrowableError = NetworkError.timeout
 
             await #expect(throws: DomainError.networkFailure("Request timed out")) {

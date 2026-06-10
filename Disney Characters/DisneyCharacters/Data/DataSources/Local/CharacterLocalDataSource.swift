@@ -1,17 +1,16 @@
 import Foundation
 
 // sourcery: AutoMockable
-protocol CharacterLocalDataSourceProtocol {
-    func getCachedCharacters(page: Int) -> [DisneyCharacter]?
-    func cacheCharacters(_ characters: [DisneyCharacter], page: Int)
-    func getCachedPaginationInfo(page: Int) -> PaginationInfo?
-    func cachePaginationInfo(_ info: PaginationInfo, page: Int)
-    func getCachedCharacter(id: Int) -> DisneyCharacter?
-    func searchCachedCharacters(name: String) -> [DisneyCharacter]
-    func mergeCharacters(_ characters: [DisneyCharacter])
+protocol CharacterLocalDataSourceProtocol: Sendable {
+    func getCachedCharacters(page: Int) async -> [DisneyCharacter]?
+    func cacheCharacters(_ characters: [DisneyCharacter], page: Int) async
+    func getCachedPaginationInfo(page: Int) async -> PaginationInfo?
+    func cachePaginationInfo(_ info: PaginationInfo, page: Int) async
+    func getCachedCharacter(id: Int) async -> DisneyCharacter?
+    func mergeCharacters(_ characters: [DisneyCharacter]) async
 }
 
-final class CharacterLocalDataSource {
+actor CharacterLocalDataSource {
     private var characterCache: [Int: DisneyCharacter] = [:]
     private var pageCache: [Int: [DisneyCharacter]] = [:]
     private var paginationCache: [Int: PaginationInfo] = [:]
@@ -37,10 +36,6 @@ extension CharacterLocalDataSource: CharacterLocalDataSourceProtocol {
 
     func getCachedCharacter(id: Int) -> DisneyCharacter? {
         characterCache[id]
-    }
-
-    func searchCachedCharacters(name: String) -> [DisneyCharacter] {
-        characterCache.values.filter { $0.name.localizedCaseInsensitiveContains(name) }
     }
 
     func mergeCharacters(_ characters: [DisneyCharacter]) {

@@ -127,6 +127,24 @@ struct CharacterListViewModelTests {
         #expect(sut.viewState == .loaded(expected))
     }
 
+    @Test("refresh calls use case with forceRefresh true")
+    func refreshCallsUseCaseWithForceRefreshTrue() async {
+        getCharactersMock.executeReturnValue = ([], PaginationInfo.stub())
+
+        await sut.refresh()
+
+        #expect(getCharactersMock.executeReceivedArguments?.forceRefresh == true)
+    }
+
+    @Test("loadCharacters calls use case with forceRefresh false")
+    func loadCharactersCallsUseCaseWithForceRefreshFalse() async {
+        getCharactersMock.executeReturnValue = ([], PaginationInfo.stub())
+
+        await sut.loadCharacters()
+
+        #expect(getCharactersMock.executeReceivedArguments?.forceRefresh == false)
+    }
+
     // MARK: - loadMoreIfNeeded
 
     @Test("loadMoreIfNeeded appends next page when current item is last")
@@ -264,5 +282,136 @@ struct CharacterListViewModelTests {
         sut.selectCharacter(id: 42)
 
         #expect(router.path.count == 1)
+    }
+
+    // MARK: - Pagination error footer
+
+    @Test("Pagination failure sets paginationError and keeps loaded state")
+    func paginationFailureSetsErrorAndKeepsLoadedState() async {
+        getCharactersMock.executeReturnValue = ([DisneyCharacter.stub()], PaginationInfo.stub(nextPage: "2"))
+        await sut.loadCharacters()
+
+        getCharactersMock.executeThrowableError = DomainError.networkFailure("timeout")
+        guard let last = (getCharactersMock.executeReturnValue?.characters) else { Issue.record("no value"); return }
+        _ = last
+        guard case .loaded(let chars) = sut.viewState, let lastItem = chars.last else {
+            Issue.record("Expected loaded state")
+            return
+        }
+        sut.loadMoreIfNeeded(currentItem: lastItem)
+        try? await Task.sleep(for: .milliseconds(100))
+
+        if case .loaded = sut.viewState {
+            #expect(sut.paginationError == String(localized: "error.networkFailure"))
+        } else {
+            Issue.record("Expected loaded state to be preserved")
+        }
+    }
+
+    @Test("retryLoadMore clears paginationError and retries fetch")
+    func retryLoadMoreClearsPaginationError() async {
+        getCharactersMock.executeReturnValue = ([DisneyCharacter.stub()], PaginationInfo.stub(nextPage: "2"))
+        await sut.loadCharacters()
+
+        getCharactersMock.executeThrowableError = DomainError.networkFailure("timeout")
+        guard case .loaded(let chars) = sut.viewState, let lastItem = chars.last else {
+            Issue.record("Expected loaded state")
+            return
+        }
+        sut.loadMoreIfNeeded(currentItem: lastItem)
+        try? await Task.sleep(for: .milliseconds(100))
+        #expect(sut.paginationError != nil)
+
+        getCharactersMock.executeThrowableError = nil
+        getCharactersMock.executeReturnValue = ([DisneyCharacter.stub(id: 2)], PaginationInfo.stub(nextPage: nil))
+        sut.retryLoadMore()
+        try? await Task.sleep(for: .milliseconds(100))
+
+        #expect(sut.paginationError == nil)
+    }
+
+    @Test("refresh clears paginationError")
+    func refreshClearsPaginationError() async {
+        getCharactersMock.executeReturnValue = ([DisneyCharacter.stub()], PaginationInfo.stub(nextPage: "2"))
+        await sut.loadCharacters()
+
+        getCharactersMock.executeThrowableError = DomainError.networkFailure("timeout")
+        guard case .loaded(let chars) = sut.viewState, let lastItem = chars.last else {
+            Issue.record("Expected loaded state")
+            return
+        }
+        sut.loadMoreIfNeeded(currentItem: lastItem)
+        try? await Task.sleep(for: .milliseconds(100))
+        #expect(sut.paginationError != nil)
+
+        getCharactersMock.executeThrowableError = nil
+        getCharactersMock.executeReturnValue = ([DisneyCharacter.stub()], PaginationInfo.stub(nextPage: nil))
+        await sut.refresh()
+
+        #expect(sut.paginationError == nil)
+    }
+
+    // MARK: - Pagination cancellation
+
+    @Test("refresh cancels in-flight pagination task")
+    func refreshCancelsPaginationTask() async {
+        let firstPage = [DisneyCharacter.stub(id: 1, name: "Page1")]
+        getCharactersMock.executeReturnValue = (firstPage, PaginationInfo.stub(nextPage: "2"))
+        await sut.loadCharacters()
+
+        let stalePage = [DisneyCharacter.stub(id: 2, name: "Stale")]
+        getCharactersMock.executeClosure = { page, _ in
+            if page == 2 {
+                try await Task.sleep(for: .milliseconds(500))
+                return (stalePage, PaginationInfo.stub(nextPage: nil))
+            }
+            let refreshed = [DisneyCharacter.stub(id: 99, name: "Refreshed")]
+            return (refreshed, PaginationInfo.stub(nextPage: nil))
+        }
+        guard let last = firstPage.last else { Issue.record("firstPage is empty"); return }
+        sut.loadMoreIfNeeded(currentItem: CharacterPresentationMapper.toPresentation(last))
+        try? await Task.sleep(for: .milliseconds(50))
+
+        await sut.refresh()
+        try? await Task.sleep(for: .milliseconds(600))
+
+        if case .loaded(let chars) = sut.viewState {
+            #expect(chars.count == 1)
+            #expect(chars.first?.name == "Refreshed")
+            #expect(chars.contains { $0.name == "Stale" } == false)
+        } else {
+            Issue.record("Expected loaded state")
+        }
+    }
+
+    @Test("updateSearch cancels in-flight pagination task")
+    func updateSearchCancelsPaginationTask() async {
+        let firstPage = [DisneyCharacter.stub(id: 1, name: "Page1")]
+        getCharactersMock.executeReturnValue = (firstPage, PaginationInfo.stub(nextPage: "2"))
+        await sut.loadCharacters()
+
+        let stalePage = [DisneyCharacter.stub(id: 2, name: "Stale")]
+        getCharactersMock.executeClosure = { page, _ in
+            if page == 2 {
+                try await Task.sleep(for: .milliseconds(500))
+                return (stalePage, PaginationInfo.stub(nextPage: nil))
+            }
+            return (firstPage, PaginationInfo.stub(nextPage: "2"))
+        }
+        guard let last = firstPage.last else { Issue.record("firstPage is empty"); return }
+        sut.loadMoreIfNeeded(currentItem: CharacterPresentationMapper.toPresentation(last))
+        try? await Task.sleep(for: .milliseconds(50))
+
+        let searchMatch = DisneyCharacter.stub(id: 50, name: "Mickey")
+        searchCharactersMock.executeReturnValue = [searchMatch]
+        sut.updateSearch(query: "Mickey")
+        try? await Task.sleep(for: .milliseconds(700))
+
+        if case .loaded(let chars) = sut.viewState {
+            #expect(chars.contains { $0.name == "Stale" } == false)
+            #expect(chars.contains { $0.name == "Mickey" })
+        } else {
+            Issue.record("Expected loaded state")
+        }
     }
 }

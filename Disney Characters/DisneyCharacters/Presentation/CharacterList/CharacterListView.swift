@@ -20,6 +20,8 @@ private extension CharacterListView {
     enum Content {
         static let title: LocalizedStringKey = "characterList.title"
         static let emptyState: LocalizedStringKey = "characterList.emptyState"
+        static let paginationError: LocalizedStringKey = "characterList.paginationError"
+        static let retry: LocalizedStringKey = "error.retry.button"
     }
 
     @ViewBuilder
@@ -78,6 +80,8 @@ private extension CharacterListView {
                     }
                     if viewModel.isLoadingMore {
                         loadingMoreView
+                    } else if let message = viewModel.paginationError {
+                        paginationErrorView(message)
                     }
                 }
             }
@@ -93,6 +97,24 @@ private extension CharacterListView {
             .progressViewStyle(.circular)
             .padding()
             .frame(maxWidth: .infinity)
+    }
+
+    func paginationErrorView(_ message: String) -> some View {
+        HStack {
+            Text(message)
+                .font(.footnote)
+                .foregroundStyle(.secondary)
+            Spacer()
+            Button(Content.retry) {
+                viewModel.retryLoadMore()
+            }
+            .font(.footnote)
+        }
+        .padding()
+        .frame(maxWidth: .infinity)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(Content.paginationError)
+        .accessibilityIdentifier(AccessibilityID.CharacterList.paginationErrorFooter)
     }
 
     enum Constant {
@@ -154,7 +176,7 @@ private func previewViewModel(
 }
 
 private final class PreviewGetCharactersUseCase: GetCharactersUseCaseProtocol {
-    func execute(page: Int) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
+    func execute(page: Int, forceRefresh: Bool) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
         let characters = (1...10).map { index in
             DisneyCharacter(
                 id: index,
@@ -169,12 +191,12 @@ private final class PreviewGetCharactersUseCase: GetCharactersUseCaseProtocol {
                 enemies: []
             )
         }
-        return (characters, PaginationInfo(totalPages: 2, count: 10, previousPage: nil, nextPage: "2"))
+        return (characters, PaginationInfo(hasNextPage: true))
     }
 }
 
 private final class PreviewNeverLoadingUseCase: GetCharactersUseCaseProtocol {
-    func execute(page: Int) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
+    func execute(page: Int, forceRefresh: Bool) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
         try await Task.sleep(for: .seconds(999))
         throw DomainError.unexpected
     }

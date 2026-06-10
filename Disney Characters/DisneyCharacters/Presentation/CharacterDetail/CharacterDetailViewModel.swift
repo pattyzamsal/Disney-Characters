@@ -7,6 +7,7 @@ final class CharacterDetailViewModel {
 
     private let characterId: Int
     private let getCharacterDetailUseCase: GetCharacterDetailUseCaseProtocol
+    private var currentTask: Task<Void, Never>?
 
     init(characterId: Int, getCharacterDetailUseCase: GetCharacterDetailUseCaseProtocol) {
         self.characterId = characterId
@@ -20,8 +21,10 @@ final class CharacterDetailViewModel {
     }
 
     func refresh() async {
+        currentTask?.cancel()
         viewState = .loading
-        await fetchCharacter()
+        currentTask = Task { await fetchCharacter() }
+        await currentTask?.value
     }
 }
 
@@ -33,33 +36,10 @@ private extension CharacterDetailViewModel {
         } catch is CancellationError {
             return
         } catch {
-            viewState = .error(errorMessage(for: error), isRetryable: isRetryable(for: error))
-        }
-    }
-
-    func errorMessage(for error: Error) -> String {
-        guard let domainError = error as? DomainError else {
-            return String(localized: "error.unexpected")
-        }
-        switch domainError {
-        case .noInternetConnection:
-            return String(localized: "error.noConnection")
-        case .networkFailure:
-            return String(localized: "error.networkFailure")
-        case .characterNotFound:
-            return String(localized: "error.characterNotFound")
-        case .unexpected:
-            return String(localized: "error.unexpected")
-        }
-    }
-
-    func isRetryable(for error: Error) -> Bool {
-        guard let domainError = error as? DomainError else { return true }
-        switch domainError {
-        case .noInternetConnection, .characterNotFound:
-            return false
-        case .networkFailure, .unexpected:
-            return true
+            viewState = .error(
+                DomainErrorPresenter.message(for: error),
+                isRetryable: DomainErrorPresenter.isRetryable(for: error)
+            )
         }
     }
 }
