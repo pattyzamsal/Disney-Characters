@@ -90,7 +90,7 @@ struct CharacterLocalDataSourceTests {
                 group.addTask {
                     await sut.cacheCharacters([DisneyCharacter.stub(id: page, name: "P\(page)")], page: page)
                     await sut.cachePaginationInfo(
-                        PaginationInfo(totalPages: pageCount, count: 1, previousPage: nil, nextPage: nil),
+                        PaginationInfo(hasNextPage: false),
                         page: page
                     )
                 }

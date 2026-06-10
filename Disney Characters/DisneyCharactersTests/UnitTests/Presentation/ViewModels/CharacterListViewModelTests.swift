@@ -284,6 +284,73 @@ struct CharacterListViewModelTests {
         #expect(router.path.count == 1)
     }
 
+    // MARK: - Pagination error footer
+
+    @Test("Pagination failure sets paginationError and keeps loaded state")
+    func paginationFailureSetsErrorAndKeepsLoadedState() async {
+        getCharactersMock.executeReturnValue = ([DisneyCharacter.stub()], PaginationInfo.stub(nextPage: "2"))
+        await sut.loadCharacters()
+
+        getCharactersMock.executeThrowableError = DomainError.networkFailure("timeout")
+        guard let last = (getCharactersMock.executeReturnValue?.characters) else { Issue.record("no value"); return }
+        _ = last
+        guard case .loaded(let chars) = sut.viewState, let lastItem = chars.last else {
+            Issue.record("Expected loaded state")
+            return
+        }
+        sut.loadMoreIfNeeded(currentItem: lastItem)
+        try? await Task.sleep(for: .milliseconds(100))
+
+        if case .loaded = sut.viewState {
+            #expect(sut.paginationError == String(localized: "error.networkFailure"))
+        } else {
+            Issue.record("Expected loaded state to be preserved")
+        }
+    }
+
+    @Test("retryLoadMore clears paginationError and retries fetch")
+    func retryLoadMoreClearsPaginationError() async {
+        getCharactersMock.executeReturnValue = ([DisneyCharacter.stub()], PaginationInfo.stub(nextPage: "2"))
+        await sut.loadCharacters()
+
+        getCharactersMock.executeThrowableError = DomainError.networkFailure("timeout")
+        guard case .loaded(let chars) = sut.viewState, let lastItem = chars.last else {
+            Issue.record("Expected loaded state")
+            return
+        }
+        sut.loadMoreIfNeeded(currentItem: lastItem)
+        try? await Task.sleep(for: .milliseconds(100))
+        #expect(sut.paginationError != nil)
+
+        getCharactersMock.executeThrowableError = nil
+        getCharactersMock.executeReturnValue = ([DisneyCharacter.stub(id: 2)], PaginationInfo.stub(nextPage: nil))
+        sut.retryLoadMore()
+        try? await Task.sleep(for: .milliseconds(100))
+
+        #expect(sut.paginationError == nil)
+    }
+
+    @Test("refresh clears paginationError")
+    func refreshClearsPaginationError() async {
+        getCharactersMock.executeReturnValue = ([DisneyCharacter.stub()], PaginationInfo.stub(nextPage: "2"))
+        await sut.loadCharacters()
+
+        getCharactersMock.executeThrowableError = DomainError.networkFailure("timeout")
+        guard case .loaded(let chars) = sut.viewState, let lastItem = chars.last else {
+            Issue.record("Expected loaded state")
+            return
+        }
+        sut.loadMoreIfNeeded(currentItem: lastItem)
+        try? await Task.sleep(for: .milliseconds(100))
+        #expect(sut.paginationError != nil)
+
+        getCharactersMock.executeThrowableError = nil
+        getCharactersMock.executeReturnValue = ([DisneyCharacter.stub()], PaginationInfo.stub(nextPage: nil))
+        await sut.refresh()
+
+        #expect(sut.paginationError == nil)
+    }
+
     // MARK: - Pagination cancellation
 
     @Test("refresh cancels in-flight pagination task")

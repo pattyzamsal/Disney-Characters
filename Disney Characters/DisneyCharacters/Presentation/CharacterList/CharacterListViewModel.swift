@@ -6,6 +6,7 @@ final class CharacterListViewModel {
     private(set) var viewState: ViewState<[CharacterPresentationModel]> = .idle
     private(set) var isLoadingMore = false
     private(set) var hasMorePages = false
+    private(set) var paginationError: String?
 
     private let getCharactersUseCase: GetCharactersUseCaseProtocol
     private let searchCharactersUseCase: SearchCharactersUseCaseProtocol
@@ -25,7 +26,7 @@ final class CharacterListViewModel {
     }
 
     func loadCharacters() async {
-        guard viewState == .idle || viewState == .loading else { return }
+        guard viewState == .idle else { return }
         viewState = .loading
         await fetchPage(1, replacing: true, forceRefresh: false)
     }
@@ -36,6 +37,7 @@ final class CharacterListViewModel {
         searchTask = nil
         paginationTask?.cancel()
         paginationTask = nil
+        paginationError = nil
         currentPage = 1
         await fetchPage(1, replacing: true, forceRefresh: true)
     }
@@ -56,6 +58,7 @@ final class CharacterListViewModel {
 
         if trimmed.isEmpty {
             searchQuery = ""
+            searchTask = nil
             Task { await refresh() }
             return
         }
@@ -70,6 +73,13 @@ final class CharacterListViewModel {
             searchQuery = trimmed
             await performSearch(trimmed)
         }
+    }
+
+    func retryLoadMore() {
+        guard hasMorePages, !isLoadingMore else { return }
+        paginationError = nil
+        paginationTask?.cancel()
+        paginationTask = Task { await loadNextPage() }
     }
 
     func selectCharacter(id: Int) {
@@ -95,12 +105,19 @@ private extension CharacterListViewModel {
             }
 
             currentPage = page
-            hasMorePages = result.info.nextPage != nil
+            hasMorePages = result.info.hasNextPage
+            paginationError = nil
         } catch is CancellationError {
             return
         } catch {
-            if case .loaded = viewState { return }
-            viewState = .error(errorMessage(for: error), isRetryable: isRetryable(for: error))
+            if case .loaded = viewState {
+                paginationError = DomainErrorPresenter.message(for: error)
+                return
+            }
+            viewState = .error(
+                DomainErrorPresenter.message(for: error),
+                isRetryable: DomainErrorPresenter.isRetryable(for: error)
+            )
         }
     }
 
@@ -120,33 +137,10 @@ private extension CharacterListViewModel {
         } catch is CancellationError {
             return
         } catch {
-            viewState = .error(errorMessage(for: error), isRetryable: isRetryable(for: error))
-        }
-    }
-
-    func errorMessage(for error: Error) -> String {
-        guard let domainError = error as? DomainError else {
-            return String(localized: "error.unexpected")
-        }
-        switch domainError {
-        case .noInternetConnection:
-            return String(localized: "error.noConnection")
-        case .networkFailure:
-            return String(localized: "error.networkFailure")
-        case .characterNotFound:
-            return String(localized: "error.characterNotFound")
-        case .unexpected:
-            return String(localized: "error.unexpected")
-        }
-    }
-
-    func isRetryable(for error: Error) -> Bool {
-        guard let domainError = error as? DomainError else { return true }
-        switch domainError {
-        case .noInternetConnection, .characterNotFound:
-            return false
-        case .networkFailure, .unexpected:
-            return true
+            viewState = .error(
+                DomainErrorPresenter.message(for: error),
+                isRetryable: DomainErrorPresenter.isRetryable(for: error)
+            )
         }
     }
 }
@@ -155,6 +149,10 @@ private extension CharacterListViewModel {
 extension CharacterListViewModel {
     func overrideState(_ state: ViewState<[CharacterPresentationModel]>) {
         viewState = state
+    }
+
+    func overridePaginationError(_ message: String?) {
+        paginationError = message
     }
 }
 #endif

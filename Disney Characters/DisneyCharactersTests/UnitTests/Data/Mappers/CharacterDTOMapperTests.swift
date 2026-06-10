@@ -70,46 +70,21 @@ struct CharacterDTOMapperTests {
 
     // MARK: - PaginationInfoDTO → PaginationInfo
 
-    @Test("Maps all fields from PaginationInfoDTO to PaginationInfo")
-    func mapsAllFieldsFromPaginationInfoDTO() {
-        let dto = PaginationInfoDTO.stub()
+    @Test("hasNextPage is true when nextPage is present")
+    func hasNextPageTrueWhenNextPagePresent() {
+        let dto = PaginationInfoDTO.stub(nextPage: "https://api.disneyapi.dev/character?page=2")
 
         let result = CharacterDTOMapper.toDomain(dto)
 
-        #expect(result.totalPages == dto.totalPages)
-        #expect(result.count == dto.count)
-        #expect(result.previousPage == dto.previousPage)
-        #expect(result.nextPage == dto.nextPage)
+        #expect(result.hasNextPage == true)
     }
 
-    @Test("Maps nil previousPage")
-    func mapsNilPreviousPage() {
-        let dto = PaginationInfoDTO.stub(previousPage: nil)
-
-        let result = CharacterDTOMapper.toDomain(dto)
-
-        #expect(result.previousPage == nil)
-    }
-
-    @Test("Maps nil nextPage on last page")
-    func mapsNilNextPageOnLastPage() {
+    @Test("hasNextPage is false when nextPage is nil")
+    func hasNextPageFalseWhenNextPageNil() {
         let dto = PaginationInfoDTO.stub(nextPage: nil)
 
         let result = CharacterDTOMapper.toDomain(dto)
 
-        #expect(result.nextPage == nil)
-    }
-
-    @Test("Maps both page links when present")
-    func mapsBothPageLinks() {
-        let dto = PaginationInfoDTO.stub(
-            previousPage: "https://api.disneyapi.dev/character?page=1",
-            nextPage: "https://api.disneyapi.dev/character?page=3"
-        )
-
-        let result = CharacterDTOMapper.toDomain(dto)
-
-        #expect(result.previousPage == "https://api.disneyapi.dev/character?page=1")
-        #expect(result.nextPage == "https://api.disneyapi.dev/character?page=3")
+        #expect(result.hasNextPage == false)
     }
 }

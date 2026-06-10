@@ -59,6 +59,14 @@ final class CharacterListViewSnapshotTests: XCTestCase {
             as: .image(layout: .device(config: .iPhone13))
         )
     }
+
+    @MainActor
+    func test_paginationErrorState() {
+        assertSnapshot(
+            of: makePaginationErrorSUT(),
+            as: .image(layout: .device(config: .iPhone13))
+        )
+    }
 }
 
 private extension CharacterListViewSnapshotTests {
@@ -97,6 +105,18 @@ private extension CharacterListViewSnapshotTests {
                     )
                 )
             )
+        }
+    }
+
+    @MainActor
+    func makePaginationErrorSUT() -> some View {
+        let characters = (1...5).map { index in
+            CharacterPresentationModel(id: index, name: "Character \(index)", imageURL: nil)
+        }
+        let viewModel = makeViewModel(state: .loaded(characters))
+        viewModel.overridePaginationError(String(localized: "error.networkFailure"))
+        return NavigationStack {
+            CharacterListView(viewModel: viewModel)
         }
     }
 

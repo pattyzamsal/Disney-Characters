@@ -41,7 +41,7 @@ private extension CharacterRowView {
                 .placeholder { defaultThumbnail }
                 .onFailure { _ in imageLoadFailed = true }
                 .resizable()
-                .scaledToFill()
+                .scaledToFit()
                 .frame(width: Constant.thumbnailSize, height: Constant.thumbnailSize)
                 .clipShape(RoundedRectangle(cornerRadius: Constant.cornerRadius))
                 .accessibilityHidden(true)

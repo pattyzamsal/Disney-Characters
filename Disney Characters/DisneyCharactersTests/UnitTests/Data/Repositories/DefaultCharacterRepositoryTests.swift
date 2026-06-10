@@ -63,8 +63,7 @@ struct DefaultCharacterRepositoryTests {
             #expect(result.characters.count == 1)
             #expect(result.characters[0].id == 42)
             #expect(result.characters[0].name == "Donald Duck")
-            #expect(result.info.totalPages == 10)
-            #expect(result.info.count == 25)
+            #expect(result.info.hasNextPage == true)
         }
 
         @Test("Caches characters and pagination info after remote fetch")

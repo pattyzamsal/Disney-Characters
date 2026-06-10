@@ -36,6 +36,8 @@ extension URLSessionHTTPClient: HTTPClient {
             } catch {
                 throw NetworkError.decodingError
             }
+        } catch is CancellationError {
+            throw CancellationError()
         } catch let error as NetworkError {
             throw error
         } catch let urlError as URLError {

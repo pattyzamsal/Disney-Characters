@@ -125,7 +125,8 @@ DisneyCharacters/
 │   ├── Common/
 │   │   ├── ViewState.swift                # generic ViewState<T> enum
 │   │   ├── ErrorView.swift                # reusable error + retry
-│   │   └── LoadingView.swift              # reusable loading indicator
+│   │   ├── LoadingView.swift              # reusable loading indicator
+│   │   └── DomainErrorPresenter.swift     # caseless enum; maps DomainError → localized message + isRetryable flag
 │   └── Navigation/
 │       └── AppRouter.swift                # AppRoute enum + @Observable AppRouter with NavigationPath
 │
@@ -333,8 +334,9 @@ Previews are always wrapped in `#if DEBUG` so they are stripped from Release and
   - `.networkFailure(String)` — device reached the server but something failed (timeout, bad status, decoding); `isRetryable: true` — show "Something went wrong, try again" with retry button
   - `.characterNotFound` — resource does not exist (404); `isRetryable: false` — retrying the same request will not help
   - `.unexpected` — unknown error; `isRetryable: true` — worth trying again
-- ViewModels catch errors and map to user-friendly localized strings + `isRetryable` flag via `ViewState.error(String, isRetryable: Bool)`
+- ViewModels catch errors and delegate message + `isRetryable` flag to `DomainErrorPresenter` (caseless enum in `Presentation/Common/`) via `ViewState.error(String, isRetryable: Bool)`
 - Always catch `CancellationError` before the generic `catch` block and return silently
+- `CancellationError` must also be re-thrown in `URLSessionHTTPClient` (before `NetworkError` and `URLError` catch clauses) so it is never swallowed and converted to `NetworkError.unknown`
 - Never show raw error messages to users — always use localized strings
 
 ### Modern Concurrency (async/await)
@@ -533,6 +535,7 @@ enum AccessibilityID {
     enum CharacterList {
         static let searchBar = "character_list_search_bar"
         static let characterRow = "character_list_row_"
+        static let paginationErrorFooter = "character_list_pagination_error_footer"
     }
     enum CharacterDetail {
         static let characterImage = "character_detail_image"
@@ -575,10 +578,11 @@ Add in Xcode > Project > Package Dependencies:
 - Each row: character thumbnail (Kingfisher) + character name
 - Loading indicator during fetch
 - Empty state for no results
-- Error state — retry button shown only for retryable errors (`.networkFailure`, `.unexpected`); hidden for `.noInternetConnection` and `.characterNotFound`
-- Pull-to-refresh support
-- Search: always calls remote API → merge into cache
-- Accessibility: search bar labeled, each row labeled with character name
+- Full-screen error state — retry button shown only for retryable errors (`.networkFailure`, `.unexpected`); hidden for `.noInternetConnection` and `.characterNotFound`
+- Pagination error footer — shown at the bottom of the list when a next-page fetch fails; includes error message and "Retry" button; does not destroy the already-loaded list; driven by `paginationError: String?` on the ViewModel
+- Pull-to-refresh support (clears `paginationError`)
+- Search: always calls remote API → merge into cache; clearing search reloads the original paginated list
+- Accessibility: search bar labeled, each row labeled with character name, pagination error footer has `paginationErrorFooter` identifier
 
 ### 3. Character Detail View (`CharacterDetailView`)
 - Large character image (Kingfisher)
