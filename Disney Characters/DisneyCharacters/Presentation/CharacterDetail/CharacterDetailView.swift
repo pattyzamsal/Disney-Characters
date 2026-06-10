@@ -76,7 +76,7 @@ private extension CharacterDetailView {
                 .placeholder { defaultHeroImage }
                 .onFailure { _ in heroImageLoadFailed = true }
                 .resizable()
-                .scaledToFill()
+                .scaledToFit()
                 .frame(maxWidth: .infinity, maxHeight: Constant.heroImageHeight)
                 .clipped()
         } else {

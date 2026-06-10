@@ -26,7 +26,7 @@ Disney Characters connects to the public [Disney API](https://github.com/ManuCas
 
 **Key features:**
 - Paginated character list with infinite scroll
-- Debounced search (local cache first, remote fallback)
+- Debounced search (always calls remote API, results merged into cache)
 - Offline support via local cache
 - Character detail with full appearance history
 - Pull-to-refresh
@@ -40,7 +40,7 @@ Disney Characters connects to the public [Disney API](https://github.com/ManuCas
 
 | Area | Tool |
 |------|------|
-| Language | Swift 5.0+ |
+| Language | Swift 6.0 |
 | UI | SwiftUI |
 | Minimum Target | iOS 26.2 |
 | Project Generation | XcodeGen |
@@ -60,7 +60,7 @@ The `.xcodeproj` is not committed to the repository — it is generated from `Di
 ### Prerequisites
 
 - macOS with [Homebrew](https://brew.sh/) installed
-- Xcode 16 or newer
+- Xcode 26.2 or newer
 
 ### Installation
 
@@ -81,7 +81,7 @@ make open
 | `make config` | Create missing xcconfig files (called automatically by `make install`) |
 | `make generate` | Regenerate the project from `project.yml` after changes |
 | `make open` | Open the project in Xcode |
-| `make mocks` | Regenerate Sourcery mocks after protocol changes |
+| `make mocks` | Manually regenerate Sourcery mocks (also runs automatically on every test build) |
 | `make lint` | Run SwiftLint |
 
 ### Running Tests
@@ -91,15 +91,19 @@ The project uses **test plans** to run unit and snapshot tests independently:
 ```bash
 # Unit tests only (default when pressing Cmd+U)
 xcodebuild test -scheme DisneyCharactersTests -testPlan UnitTests \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'
 
-# Snapshot tests only
+# Snapshot tests only (must use the pinned simulator — see Pinned recording environment)
 xcodebuild test -scheme DisneyCharactersTests -testPlan SnapshotTests \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'
 
 # Everything
 xcodebuild test -scheme DisneyCharactersTests -testPlan AllTests \
-  -destination 'platform=iOS Simulator,name=iPhone 16'
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'
+
+# Smoke tests (UITests, hits real Disney API)
+xcodebuild test -scheme DisneyCharactersUITests \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'
 ```
 
 You can also switch plans inside Xcode via `Product → Test Plan`.
@@ -194,13 +198,22 @@ Written with `import Testing`, `@Test`, and `#expect()`. Each layer is tested in
 - **Domain:** All three use cases
 - **Presentation:** Presentation mappers, both view models
 
-Dependencies are mocked using Sourcery-generated mocks. After any protocol change, run `make mocks` to regenerate.
+Dependencies are mocked using Sourcery-generated mocks. The mocks regenerate **automatically** on every `DisneyCharactersTests` build via a `preBuildScripts` entry in `project.yml` — protocol changes never lead to stale mocks. The generated file (`AutoMockable.generated.swift`) is gitignored as a build artifact. Use `make mocks` when you want to regenerate manually outside of a build (e.g. to inspect the diff before opening Xcode).
 
 ### Snapshot Tests — XCTest + swift-snapshot-testing
 
 Snapshot tests live in the **unit test target** (`DisneyCharactersTests/SnapshotTests/`), not in the UITests target. This is intentional: Xcode 16 forces `-module-alias Testing=_Testing_Unavailable` on all UI test bundles, making swift-snapshot-testing (which links against Testing.framework since 1.17+) permanently incompatible with UITest targets.
 
 Each screen is tested in: light mode, dark mode, iPhone SE, and Dynamic Type `accessibilityExtraExtraExtraLarge`.
+
+**Reference images are committed** to `DisneyCharactersTests/SnapshotTests/__Snapshots__/`, so fresh clones run green without a recording step.
+
+**Pinned recording environment:** always re-record on the **iPhone 16 / iOS 26.2** simulator. Different simulators or OS versions render text and gradients differently and will produce non-deterministic diffs:
+
+```bash
+xcodebuild test -scheme DisneyCharactersTests -testPlan SnapshotTests \
+  -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'
+```
 
 ### Test Plans
 
@@ -230,7 +243,9 @@ The project uses the iOS 17 Observation framework (`@Observable`) instead of Com
 
 ### Cache-first repository strategy
 
-`DefaultCharacterRepository` returns cached data immediately and fetches from the network only when the cache is cold. Search queries filter the local cache first and only fall back to the remote API if no local match is found — remote results are then merged into the cache. This gives the app offline support and reduces unnecessary network calls.
+`DefaultCharacterRepository` returns cached data immediately and fetches from the network only when the cache is cold. Pull-to-refresh bypasses the cache via an explicit `forceRefresh: true` flag so users can always retrieve fresh data on demand.
+
+Search always calls the remote API (`GET /character?name=<query>`), regardless of what is cached. A local-first search would silently return incomplete results — the local cache only contains characters from pages the user has already scrolled through, while the API searches across all ~500 pages. Remote results are merged into the local cache after each search to warm subsequent detail fetches.
 
 ### `CancellationError` handled silently in all ViewModels
 
@@ -243,6 +258,16 @@ Moving snapshot tests to `DisneyCharactersUITests` was the natural first instinc
 ### XcodeGen for project generation
 
 The `.xcodeproj` is generated from `project.yml` and is not committed to git. This eliminates merge conflicts on the project file, makes the project setup reproducible with a single `make install` command, and keeps the repository clean. All project configuration (targets, build settings, SPM packages, schemes, test plans) lives in a single readable YAML file.
+
+### Swift 6 language mode with full strict concurrency
+
+The project compiles with `SWIFT_VERSION: "6.0"` and `SWIFT_STRICT_CONCURRENCY: complete`. Swift 6 promotes all data-race warnings to errors, so the concurrency model had to be made explicit before enabling it:
+
+- All protocols that cross actor boundaries (`HTTPClient`, `CharacterRepositoryProtocol`, use case protocols) are `Sendable`.
+- `CharacterLocalDataSource` was converted from `final class` to `actor`, eliminating the data race that previously existed when multiple tasks accessed the in-memory cache concurrently.
+- Sourcery's `AutoMockable.stencil` was updated to emit `@unchecked Sendable` on generated mocks so they satisfy `Sendable` protocol requirements.
+- `URLProtocolStub`'s mutable class-level state is annotated `nonisolated(unsafe)` — it is explicitly protected by an `NSLock`, making the manual annotation correct.
+- A retroactive `@unchecked Sendable` conformance for `LocalizedStringKey` silences the checker for static string-key constants in Views (Apple's SDK exposes the conformance only internally; two informational "already stated" warnings remain and are benign).
 
 ### Global uniqueness for snapshot test method names
 

@@ -7,6 +7,7 @@ enum AccessibilityID {
     enum CharacterList {
         static let searchBar = "character_list_search_bar"
         static let characterRow = "character_list_row_"
+        static let paginationErrorFooter = "character_list_pagination_error_footer"
     }
 
     enum CharacterDetail {

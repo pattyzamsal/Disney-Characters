@@ -4,15 +4,11 @@ import XCTest
 @testable import DisneyCharacters
 
 final class CharacterDetailViewSnapshotTests: XCTestCase {
-    // Set to false after reference snapshots have been recorded and verified.
-    private let isRecording = false
-
     @MainActor
     func test_detail_loadedState_lightMode() {
         assertSnapshot(
             of: makeLoadedSUT(),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 
@@ -20,8 +16,7 @@ final class CharacterDetailViewSnapshotTests: XCTestCase {
     func test_detail_loadedState_darkMode() {
         assertSnapshot(
             of: makeLoadedSUT().preferredColorScheme(.dark),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 
@@ -31,8 +26,7 @@ final class CharacterDetailViewSnapshotTests: XCTestCase {
             of: makeLoadedSUT(character: .stub(films: [], shortFilms: [], tvShows: [],
                                                videoGames: [], parkAttractions: [],
                                                allies: [], enemies: [])),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 
@@ -40,8 +34,7 @@ final class CharacterDetailViewSnapshotTests: XCTestCase {
     func test_detail_loadingState() {
         assertSnapshot(
             of: makeLoadingSUT(),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 
@@ -49,8 +42,7 @@ final class CharacterDetailViewSnapshotTests: XCTestCase {
     func test_detail_errorState() {
         assertSnapshot(
             of: makeErrorSUT(),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 
@@ -58,8 +50,7 @@ final class CharacterDetailViewSnapshotTests: XCTestCase {
     func test_detail_loadedState_iPhoneSe() {
         assertSnapshot(
             of: makeLoadedSUT(),
-            as: .image(layout: .device(config: .iPhoneSe)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhoneSe))
         )
     }
 
@@ -67,8 +58,7 @@ final class CharacterDetailViewSnapshotTests: XCTestCase {
     func test_detail_loadedState_accessibilityExtraExtraExtraLarge() {
         assertSnapshot(
             of: makeLoadedSUT().environment(\.sizeCategory, .accessibilityExtraExtraExtraLarge),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 }

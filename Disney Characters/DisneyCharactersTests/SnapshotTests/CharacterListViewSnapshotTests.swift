@@ -4,14 +4,11 @@ import XCTest
 @testable import DisneyCharacters
 
 final class CharacterListViewSnapshotTests: XCTestCase {
-    private let isRecording = false
-
     @MainActor
     func test_loadingState_lightMode() {
         assertSnapshot(
             of: makeLoadingSUT(),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 
@@ -19,8 +16,7 @@ final class CharacterListViewSnapshotTests: XCTestCase {
     func test_loadedState_lightMode() {
         assertSnapshot(
             of: makeLoadedSUT(),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 
@@ -28,8 +24,7 @@ final class CharacterListViewSnapshotTests: XCTestCase {
     func test_loadedState_darkMode() {
         assertSnapshot(
             of: makeLoadedSUT().preferredColorScheme(.dark),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 
@@ -37,8 +32,7 @@ final class CharacterListViewSnapshotTests: XCTestCase {
     func test_emptyState() {
         assertSnapshot(
             of: makeEmptySUT(),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 
@@ -46,8 +40,7 @@ final class CharacterListViewSnapshotTests: XCTestCase {
     func test_errorState() {
         assertSnapshot(
             of: makeErrorSUT(),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 
@@ -55,8 +48,7 @@ final class CharacterListViewSnapshotTests: XCTestCase {
     func test_loadedState_iPhoneSe() {
         assertSnapshot(
             of: makeLoadedSUT(),
-            as: .image(layout: .device(config: .iPhoneSe)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhoneSe))
         )
     }
 
@@ -64,8 +56,15 @@ final class CharacterListViewSnapshotTests: XCTestCase {
     func test_loadedState_accessibilityExtraExtraExtraLarge() {
         assertSnapshot(
             of: makeLoadedSUT().environment(\.sizeCategory, .accessibilityExtraExtraExtraLarge),
-            as: .image(layout: .device(config: .iPhone13)),
-            record: isRecording
+            as: .image(layout: .device(config: .iPhone13))
+        )
+    }
+
+    @MainActor
+    func test_paginationErrorState() {
+        assertSnapshot(
+            of: makePaginationErrorSUT(),
+            as: .image(layout: .device(config: .iPhone13))
         )
     }
 }
@@ -98,7 +97,26 @@ private extension CharacterListViewSnapshotTests {
     @MainActor
     func makeErrorSUT() -> some View {
         NavigationStack {
-            CharacterListView(viewModel: makeViewModel(state: .error(String(localized: "error.networkFailure"), isRetryable: true)))
+            CharacterListView(
+                viewModel: makeViewModel(
+                    state: .error(
+                        String(localized: "error.networkFailure"),
+                        isRetryable: true
+                    )
+                )
+            )
+        }
+    }
+
+    @MainActor
+    func makePaginationErrorSUT() -> some View {
+        let characters = (1...5).map { index in
+            CharacterPresentationModel(id: index, name: "Character \(index)", imageURL: nil)
+        }
+        let viewModel = makeViewModel(state: .loaded(characters))
+        viewModel.overridePaginationError(String(localized: "error.networkFailure"))
+        return NavigationStack {
+            CharacterListView(viewModel: viewModel)
         }
     }
 
@@ -115,7 +133,7 @@ private extension CharacterListViewSnapshotTests {
 }
 
 private final class NeverLoadingGetCharactersUseCase: GetCharactersUseCaseProtocol {
-    func execute(page: Int) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
+    func execute(page: Int, forceRefresh: Bool) async throws -> (characters: [DisneyCharacter], info: PaginationInfo) {
         try await Task.sleep(for: .seconds(999))
         throw DomainError.unexpected
     }

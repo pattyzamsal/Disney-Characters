@@ -1,6 +1,6 @@
 @testable import DisneyCharacters
 {% for type in types.protocols where type.annotations.AutoMockable %}
-{% if type.accessLevel == "public" %}public {% endif %}final class {{ type.name }}Mock: {{ type.name }} {
+{% if type.accessLevel == "public" %}public {% endif %}final class {{ type.name }}Mock: {{ type.name }}, @unchecked Sendable {
 {% for variable in type.variables %}
     {% if variable.isOptional %}
     var {{ variable.name }}: {{ variable.typeName }} = nil

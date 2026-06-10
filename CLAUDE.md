@@ -6,8 +6,8 @@ Native iOS application built with SwiftUI that consumes the Disney API (https://
 ## Tech Stack
 - **Language:** Swift 6.0+
 - **UI:** SwiftUI
-- **Min Target:** iOS 17.0
-- **Build:** Xcode 16+
+- **Min Target:** iOS 26.2
+- **Build:** Xcode 26.2+
 - **Dependency Manager:** Swift Package Manager (SPM)
 - **Linting:** SwiftLint
 - **Mocking:** Sourcery
@@ -125,7 +125,8 @@ DisneyCharacters/
 │   ├── Common/
 │   │   ├── ViewState.swift                # generic ViewState<T> enum
 │   │   ├── ErrorView.swift                # reusable error + retry
-│   │   └── LoadingView.swift              # reusable loading indicator
+│   │   ├── LoadingView.swift              # reusable loading indicator
+│   │   └── DomainErrorPresenter.swift     # caseless enum; maps DomainError → localized message + isRetryable flag
 │   └── Navigation/
 │       └── AppRouter.swift                # AppRoute enum + @Observable AppRouter with NavigationPath
 │
@@ -174,7 +175,9 @@ DisneyCharacters/
     └── Fixtures/
         └── character_list_response.json   # stub JSON for tests
 
-UITests/                                   # DisneyCharactersUITests target (UI automation only)
+UITests/                                   # DisneyCharactersUITests target
+    ├── DisneyCharactersUITests.swift          # 5 smoke tests (Splash → List → Detail → back)
+    └── DisneyCharactersUITestsLaunchTests.swift  # launch screenshot in all UI configurations
 ```
 
 Note: Snapshot tests live in `DisneyCharactersTests/SnapshotTests/` (unit test target), not UITests.
@@ -302,7 +305,7 @@ Previews are always wrapped in `#if DEBUG` so they are stripped from Release and
 - **Cache-first strategy (offline support):**
   - `getCharacters(page:)` — returns cached characters + PaginationInfo if available; fetches remote otherwise and caches both
   - `getCharacterDetail(id:)` — returns cached character if available; fetches remote otherwise
-  - `searchCharacters(name:)` — filters local cache first; falls back to remote only if cache has no match; merges remote results into cache
+  - `searchCharacters(name:)` — always calls remote API; merges results into cache (local cache cannot guarantee exhaustive results across all API pages)
 
 ### Mappers
 - **DTO → Domain:** `CharacterDTOMapper.toDomain(_ dto: CharacterDTO) -> DisneyCharacter`
@@ -331,8 +334,9 @@ Previews are always wrapped in `#if DEBUG` so they are stripped from Release and
   - `.networkFailure(String)` — device reached the server but something failed (timeout, bad status, decoding); `isRetryable: true` — show "Something went wrong, try again" with retry button
   - `.characterNotFound` — resource does not exist (404); `isRetryable: false` — retrying the same request will not help
   - `.unexpected` — unknown error; `isRetryable: true` — worth trying again
-- ViewModels catch errors and map to user-friendly localized strings + `isRetryable` flag via `ViewState.error(String, isRetryable: Bool)`
+- ViewModels catch errors and delegate message + `isRetryable` flag to `DomainErrorPresenter` (caseless enum in `Presentation/Common/`) via `ViewState.error(String, isRetryable: Bool)`
 - Always catch `CancellationError` before the generic `catch` block and return silently
+- `CancellationError` must also be re-thrown in `URLSessionHTTPClient` (before `NetworkError` and `URLError` catch clauses) so it is never swallowed and converted to `NetworkError.unknown`
 - Never show raw error messages to users — always use localized strings
 
 ### Modern Concurrency (async/await)
@@ -345,9 +349,8 @@ Previews are always wrapped in `#if DEBUG` so they are stripped from Release and
 
 ### Search Implementation (List View)
 - Search bar with debounce (500ms) using `Task` with `try await Task.sleep`
-- **Local-first strategy:** filter cached characters by name first
-- **Remote fallback:** if local cache has no match, call `GET /character?name=<query>`
-- Merge remote results into local cache to avoid duplicate API calls
+- **Always-remote:** call `GET /character?name=<query>` on every search — local cache only contains pages the user has scrolled through and cannot give exhaustive results
+- Merge remote results into local cache after each search to warm subsequent detail fetches
 - Clear search restores the original paginated list
 
 ## Architecture Decisions
@@ -456,9 +459,10 @@ reporter: "xcode"
 
 ### Sourcery Mocks
 - Annotate protocols: `// sourcery: AutoMockable`
-- Run Sourcery: `sourcery --sources "Disney Characters/DisneyCharacters" --templates Templates/AutoMockable.stencil --output "Disney Characters/DisneyCharactersTests/Mocks/Generated"`
 - Generated mocks go in `Tests/Mocks/Generated/` — never edit manually
-- Always regenerate after protocol changes
+- **Mocks regenerate automatically** on every `DisneyCharactersTests` build via a `preBuildScripts` entry in `project.yml`. Sourcery must be installed locally (`brew install sourcery`, or `make install`); the build phase falls back to a warning if it isn't.
+- Generated file (`AutoMockable.generated.swift`) is **gitignored** — it is a build artifact, not source.
+- For manual regeneration (e.g., to inspect changes before building): `make mocks`
 - **Nil return value gotcha:** Sourcery generates `var xReturnValue: T?!` for optional-returning methods. Setting this to bare `nil` crashes — the outer IUO becomes nil and force-unwraps. Use a typed nil instead:
   ```swift
   // Wrong — crashes at runtime
@@ -502,8 +506,9 @@ xcodebuild test -scheme DisneyCharactersTests -testPlan AllTests      -destinati
 - Test in light and dark mode
 - Test with Dynamic Type sizes (`.accessibilityExtraExtraExtraLarge`)
 - Test in multiple device widths (iPhone SE, iPhone 16, iPad)
-- Record snapshots first (`isRecording = true`), then assert
-- Store reference images in `DisneyCharactersTests/SnapshotTests/__Snapshots__/`
+- To re-record snapshots wrap the call in `withSnapshotTesting(record: .all) { assertSnapshot(...) }`, run once, then remove the wrapper. Never pass `record:` to `assertSnapshot` directly — the `Bool` overload is deprecated in swift-snapshot-testing 1.17+
+- Store reference images in `DisneyCharactersTests/SnapshotTests/__Snapshots__/` — these PNGs **are committed** to the repo, so CI and fresh clones run green
+- **Pinned recording environment:** always re-record on **iPhone 16 / iOS 26.2** simulator (`-destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'`). Different simulators or OS versions render text and gradients differently and will produce non-deterministic diffs
 - **Test method names must be globally unique** across ALL snapshot test classes — Xcode copies reference PNGs flat into the test bundle (no subdirectory per class), so two classes with the same method name cause a "Multiple commands produce" build error. Use a class-specific prefix for ambiguous names (e.g. `test_row_accessibilityExtraExtraExtraLarge` instead of `test_accessibilityExtraExtraExtraLarge`)
 
 ## Accessibility
@@ -530,6 +535,7 @@ enum AccessibilityID {
     enum CharacterList {
         static let searchBar = "character_list_search_bar"
         static let characterRow = "character_list_row_"
+        static let paginationErrorFooter = "character_list_pagination_error_footer"
     }
     enum CharacterDetail {
         static let characterImage = "character_detail_image"
@@ -572,10 +578,11 @@ Add in Xcode > Project > Package Dependencies:
 - Each row: character thumbnail (Kingfisher) + character name
 - Loading indicator during fetch
 - Empty state for no results
-- Error state — retry button shown only for retryable errors (`.networkFailure`, `.unexpected`); hidden for `.noInternetConnection` and `.characterNotFound`
-- Pull-to-refresh support
-- Search: local filter first → remote API fallback → merge into cache
-- Accessibility: search bar labeled, each row labeled with character name
+- Full-screen error state — retry button shown only for retryable errors (`.networkFailure`, `.unexpected`); hidden for `.noInternetConnection` and `.characterNotFound`
+- Pagination error footer — shown at the bottom of the list when a next-page fetch fails; includes error message and "Retry" button; does not destroy the already-loaded list; driven by `paginationError: String?` on the ViewModel
+- Pull-to-refresh support (clears `paginationError`)
+- Search: always calls remote API → merge into cache; clearing search reloads the original paginated list
+- Accessibility: search bar labeled, each row labeled with character name, pagination error footer has `paginationErrorFooter` identifier
 
 ### 3. Character Detail View (`CharacterDetailView`)
 - Large character image (Kingfisher)
@@ -607,7 +614,8 @@ make generate
 - **Run snapshot tests only:** `xcodebuild test -scheme DisneyCharactersTests -testPlan SnapshotTests -destination 'platform=iOS Simulator,name=iPhone 16'`
 - **Lint:** `swiftlint --config .swiftlint.yml`
 - **Generate mocks:** `sourcery --sources "Disney Characters/DisneyCharacters" --templates Templates/AutoMockable.stencil --output "Disney Characters/DisneyCharactersTests/Mocks/Generated"`
-- **Record snapshots:** Set `isRecording = true` in snapshot test, run once, set back to `false`
+- **Record snapshots:** Wrap the call in `withSnapshotTesting(record: .all) { assertSnapshot(...) }`, run once, then remove the wrapper
+- **Run smoke tests (UITests):** `xcodebuild test -scheme DisneyCharactersUITests -destination 'platform=iOS Simulator,name=iPhone 16,OS=26.2'`
 
 ## Git Conventions
 - Branch naming: `feature/`, `bugfix/`, `refactor/`, `test/`

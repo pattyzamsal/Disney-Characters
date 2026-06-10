@@ -112,6 +112,3 @@ Disney-Characters-Info.plist
 
 # Sourcery generated mocks — regenerate with `make mocks`
 *.generated.swift
-
-# Snapshot test reference images (committed separately per team preference)
-**/__Snapshots__/

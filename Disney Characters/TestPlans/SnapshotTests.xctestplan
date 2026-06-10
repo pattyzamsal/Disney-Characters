@@ -11,14 +11,18 @@
     {
       "skippedTests": [
         "CharacterDTOMapperTests",
+        "DomainErrorPresenterTests",
         "CharacterDetailPresentationMapperTests",
         "CharacterDetailViewModelTests",
         "CharacterListViewModelTests",
+        "CharacterLocalDataSourceTests",
         "CharacterPresentationMapperTests",
         "DefaultCharacterRepositoryTests",
+        "EndpointTests",
         "GetCharacterDetailUseCaseTests",
         "GetCharactersUseCaseTests",
-        "SearchCharactersUseCaseTests"
+        "SearchCharactersUseCaseTests",
+        "URLSessionHTTPClientTests"
       ],
       "target": {
         "containerPath": "container:DisneyCharacters.xcodeproj",

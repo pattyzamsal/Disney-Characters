@@ -4,7 +4,7 @@ options:
   bundleIdPrefix: com.disneycharacters.publicapp
   deploymentTarget:
     iOS: "26.2"
-  xcodeVersion: "16.0"
+  xcodeVersion: "26.2"
   generateEmptyDirectories: true
   defaultConfig: Debug
 
@@ -28,7 +28,8 @@ configs:
 
 settings:
   base:
-    SWIFT_VERSION: "5.0"
+    SWIFT_VERSION: "6.0"
+    SWIFT_STRICT_CONCURRENCY: complete
     TARGETED_DEVICE_FAMILY: "1,2"
     ALWAYS_SEARCH_USER_PATHS: NO
     CLANG_ENABLE_MODULES: YES
@@ -92,6 +93,7 @@ targets:
         ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS: YES
         PRODUCT_BUNDLE_IDENTIFIER: "com.disneycharacters.publicapp.Disney-Characters"
         PRODUCT_NAME: "Disney Characters"
+        PRODUCT_MODULE_NAME: DisneyCharacters
         SWIFT_EMIT_LOC_STRINGS: YES
     dependencies:
       - package: Kingfisher
@@ -112,8 +114,9 @@ targets:
     settings:
       base:
         BUNDLE_LOADER: "$(TEST_HOST)"
+        GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: "com.disneycharacters.publicapp.Disney-CharactersTests"
-        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/DisneyCharacters.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/DisneyCharacters"
+        TEST_HOST: "$(BUILT_PRODUCTS_DIR)/Disney Characters.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Disney Characters"
     dependencies:
       - target: DisneyCharacters
       - package: swift-snapshot-testing
@@ -122,6 +125,20 @@ targets:
         product: InlineSnapshotTesting
       - package: swift-snapshot-testing
         product: SnapshotTestingCustomDump
+    preBuildScripts:
+      - name: Sourcery
+        script: |
+          if which sourcery > /dev/null; then
+            sourcery \
+              --sources "${SRCROOT}/DisneyCharacters" \
+              --templates "${SRCROOT}/../Templates/AutoMockable.stencil" \
+              --output "${SRCROOT}/DisneyCharactersTests/Mocks/Generated"
+          else
+            echo "warning: Sourcery not installed. Run: brew install sourcery"
+          fi
+        outputFiles:
+          - "$(SRCROOT)/DisneyCharactersTests/Mocks/Generated/AutoMockable.generated.swift"
+        runForInstallBuildsOnly: false
 
   DisneyCharactersUITests:
     type: bundle.ui-testing
@@ -129,16 +146,11 @@ targets:
     sources: DisneyCharactersUITests
     settings:
       base:
+        GENERATE_INFOPLIST_FILE: YES
         PRODUCT_BUNDLE_IDENTIFIER: "com.disneycharacters.publicapp.Disney-CharactersUITests"
         TEST_TARGET_NAME: DisneyCharacters
     dependencies:
       - target: DisneyCharacters
-      - package: swift-snapshot-testing
-        product: SnapshotTesting
-      - package: swift-snapshot-testing
-        product: InlineSnapshotTesting
-      - package: swift-snapshot-testing
-        product: SnapshotTestingCustomDump
 
 # ─── Schemes ─────────────────────────────────────────────────────────────────
 
@@ -171,7 +183,7 @@ schemes:
         DisneyCharactersTests: [test, analyze]
     test:
       config: Debug
-      plans:
+      testPlans:
         - path: TestPlans/UnitTests.xctestplan
           defaultPlan: true
         - path: TestPlans/SnapshotTests.xctestplan
